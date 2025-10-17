@@ -62,6 +62,25 @@
       border-left-color: var(--accent);
       transform: translateY(0);
     }
+    .replyBtn {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.replyBtn:hover {
+  text-decoration: underline;
+}
+
+.replyTag {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
     .meta{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
     .meta .name{font-weight:700}
     .meta .time{font-size:12px;color:var(--muted)}
@@ -558,6 +577,36 @@
           messageInput.disabled = true; sendBtn.disabled = true; charCountEl.style.opacity = 0.5;
         } else { messageInput.disabled = false; charCountEl.style.opacity = 1; }
       }
+       // Add beforeunload event to prevent closing unless backslash is pressed
+    let backslashPressed = false;
+    
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '\\') {
+        backslashPressed = true;
+      }
+    });
+    
+    window.addEventListener('beforeunload', (e) => {
+      if (!backslashPressed) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    });
+      
+      // Add reply functionality
+    let replyToMessage = null;
+    
+    function setReplyTo(message) {
+      replyToMessage = message;
+      messageInput.placeholder = `Replying to ${message.username || 'Unknown'}...`;
+      messageInput.focus();
+    }
+    
+    function clearReplyTo() {
+      replyToMessage = null;
+      messageInput.placeholder = 'Message (Shift+Enter for newline)';
+    }
 
       // event wiring
       channelsEl.addEventListener('click', (e)=>{
@@ -622,6 +671,68 @@
         if(changed) writeTypingMap(map);
         updateTypingUI();
       }
+      // Modify renderMessage to add reply button
+    function renderMessage(msg, localUser){
+      if(msg.privateTo && !(msg.privateTo === localUser || msg.username === localUser)) return null;
+      const container = document.createElement('div');
+      const author = msg.username || msg.name || 'Unknown';
+      const isMe = author === localUser;
+      container.className = 'message' + (isMe ? ' me' : '');
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+
+      const meta = document.createElement('div'); meta.className = 'meta';
+      const nameEl = document.createElement('span'); nameEl.className = 'name'; nameEl.textContent = author;
+      // apply name color from message if present (server-side stored), otherwise apply local user's nameColor for own messages
+      if(msg.nameColor) nameEl.style.color = msg.nameColor;
+      else if(isMe && nameColor) nameEl.style.color = nameColor;
+
+      const timeEl = document.createElement('span'); timeEl.className = 'time'; timeEl.textContent = formatTime(msg.createdAt || msg.created_at || msg.timestamp || msg.time || '');
+      meta.appendChild(nameEl);
+      meta.appendChild(timeEl);
+      
+      // Add reply button
+      if (!isMe && !msg.privateTo) {
+        const replyBtn = document.createElement('button');
+        replyBtn.className = 'replyBtn';
+        replyBtn.textContent = 'Reply';
+        replyBtn.style.cssText = 'background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;margin-left:8px';
+        replyBtn.onclick = (e) => {
+          e.stopPropagation();
+          setReplyTo(msg);
+        };
+        meta.appendChild(replyBtn);
+      }
+
+      bubble.appendChild(meta);
+
+      if(msg.imageUrl){
+        const photoDiv = document.createElement('div'); photoDiv.className = 'photoMessage';
+        const img = document.createElement('img'); img.src = msg.imageUrl; img.alt = msg.message || 'photo';
+        img.addEventListener('click', ()=> window.open(img.src, '_blank'));
+        photoDiv.appendChild(img);
+        if(msg.message){
+          const caption = document.createElement('div'); caption.className = 'text'; caption.textContent = msg.message;
+          photoDiv.appendChild(caption);
+        }
+        bubble.appendChild(photoDiv);
+      } else {
+        const text = document.createElement('div'); text.className = 'text'; text.textContent = msg.message || msg.text || msg.content || '';
+        bubble.appendChild(text);
+      }
+
+      // Add reply tag if this is a reply
+      if (msg.replyTo) {
+        const replyTag = document.createElement('div');
+        replyTag.className = 'replyTag';
+        replyTag.style.cssText = 'font-size:12px;color:var(--muted);margin-top:4px';
+        replyTag.textContent = `Replying to ${msg.replyTo}`;
+        bubble.appendChild(replyTag);
+      }
+
+      container.appendChild(bubble);
+      return container;
+    }
 
       async function init(){
         applyTheme(); initializeAppearanceInputs();
