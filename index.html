@@ -1,39 +1,73 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>notcord — secured client with reply</title>
+  <title>notcord — multi-channel</title>
   <style>
+    /* Restored original theme & layout styling (kept compact) */
     :root{
-      --theme-1: #071226;
-      --theme-2: #07101a;
-      --theme-3: #0b2233;
+      --bg-0: #071226;
+      --bg-1: #07101a;
+      --panel: #0b1220;
       --muted: #9aa4b2;
       --accent: #5865f2;
+      --msg-bg: #111827;
       --me-bg: #2b3440;
       --border: rgba(255,255,255,0.06);
       --text: #e6eef6;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Helvetica,Arial;color:var(--text);
-      background:linear-gradient(180deg,var(--theme-1) 0%, var(--theme-2) 100%);
+    :root[data-theme="light"]{
+      --bg-0: #f3f7fb;
+      --bg-1: #eef4fb;
+      --panel: #ffffff;
+      --muted: #556270;
+      --msg-bg: #f4f7fb;
+      --me-bg: #e8eefc;
+      --border: rgba(0,0,0,0.06);
+      --text: #0b1220;
     }
 
-    .app { width:100%; height:100vh; display:grid; grid-template-columns:260px 1fr 260px; overflow:hidden; }
-    .sidebar{ padding:14px; display:flex; flex-direction:column; gap:12px; height:100vh; overflow:auto; background:linear-gradient(180deg,var(--theme-1),var(--theme-2)); border-right:1px solid var(--border) }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;color:var(--text);background:linear-gradient(180deg,var(--bg-0) 0%, var(--bg-1) 100%);}
+    .app {
+      width:100%;
+      height:100vh;
+      display:grid;
+      grid-template-columns:260px 1fr;
+      gap:0;
+      overflow:hidden;
+    }
 
-    .brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:18px}
-    .brand .dot{width:18px;height:18px;border-radius:50%;background:var(--theme-3);box-shadow:0 6px 20px rgba(11,34,51,0.35)}
-    .brand .name{color:var(--theme-3);font-weight:800;font-size:18px}
+    /* Sidebar */
+    .sidebar{
+      background:var(--panel);
+      border-right:1px solid var(--border);
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .brand{display:flex;gap:10px;align-items:center;font-weight:700;color:var(--accent);font-size:18px}
+    .brand .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px rgba(88,101,242,0.22)}
+    .usernameBox{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .usernameBox input{
+      flex:1;padding:8px;background:transparent;border:1px solid var(--border);border-radius:8px;color:inherit;outline:none;
+    }
+    .usernameBox button{
+      padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;
+    }
+    .usernameLocked{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border);font-weight:600}
 
-    .usernameBox{display:flex;gap:8px;align-items:center}
-    .usernameBox input{flex:1;padding:8px;background:transparent;border:1px solid var(--border);border-radius:8px;color:inherit;outline:none}
-    .usernameBox button{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
-    .usernameLocked{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border);font-weight:600;overflow:hidden}
-
-    .channels{margin-top:6px;display:flex;flex-direction:column;gap:6px}
-    .channel{padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer;border:1px solid transparent;display:flex;justify-content:space-between;align-items:center}
+    .channels{margin-top:6px;display:flex;flex-direction:column;gap:6px;overflow:auto}
+    .channel{
+      padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer;border:1px solid transparent;
+      display:flex;justify-content:space-between;align-items:center;
+    }
     .channel:hover{background:rgba(255,255,255,0.01)}
     .channel.active{background:linear-gradient(90deg, rgba(88,101,242,0.12), rgba(88,101,242,0.02));color:var(--text);border-color:rgba(88,101,242,0.12)}
 
@@ -42,73 +76,50 @@
     .settings input[type="color"]{width:48px;height:32px;padding:0;border:none;background:transparent;cursor:pointer}
     .settings .toggleBtn{padding:8px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer}
 
-    .chatPanel{display:flex;flex-direction:column;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);position:relative;min-height:0}
-    .chatBox{display:flex;flex-direction:column;height:100%;min-height:0}
-
-    .header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:transparent}
+    /* Chat area */
+    .chatPanel{display:flex;flex-direction:column;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);position:relative}
+    .header{
+      padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;
+    }
     .header h2{margin:0;font-size:18px}
     .header .spacer{flex:1}
-    .header .right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-    .status{color:var(--muted);font-size:13px}
-    .typing{color:var(--muted);font-size:12px;height:18px}
-
-    .messages{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;min-height:0;background:transparent}
-    .message{display:flex;gap:12px;align-items:flex-start;max-width:85%}
-    .message.me{margin-left:auto;justify-content:flex-end}
-    .bubble{
-      background:var(--theme-3);
-      color:var(--text);
-      padding:10px 12px;border-radius:12px;display:flex;flex-direction:column;gap:6px;word-break:break-word;
-      border-left:4px solid rgba(0,0,0,0.08);
-      box-shadow:0 6px 18px rgba(2,6,23,0.6);
-      max-width:480px;
+    .messages{
+      flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;
+      /* ensure we can scroll */
+      min-height: 0;
     }
-    .message.me .bubble{ border-left-color: var(--accent); background:var(--theme-3); }
+    .message{display:flex;gap:12px;align-items:flex-start;max-width:85%;}
+    .message.me{margin-left:auto;justify-content:flex-end;}
+    .bubble{background:var(--msg-bg);padding:10px 12px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6);display:flex;flex-direction:column;gap:6px;color:#dbe8ff;word-break:break-word}
+    .message.me .bubble{background:var(--me-bg)}
     .meta{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
     .meta .name{font-weight:700}
     .meta .time{font-size:12px;color:var(--muted)}
     .text{white-space:pre-wrap;color:inherit;font-size:15px;word-break:break-word;overflow-wrap:break-word}
 
-    .replyPreview{background:rgba(255,255,255,0.03);padding:6px;border-radius:8px;margin-bottom:6px;font-size:13px;color:var(--muted)}
-    .replyPreview .replyCancel{float:right;cursor:pointer;color:var(--muted);font-weight:700}
-
-    .photoMessage img { max-width: 420px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor:pointer; transition:transform .15s }
-    .photoMessage img:hover{ transform: scale(1.03) }
-
     .inputArea{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
     .inputArea textarea{flex:1;min-height:44px;max-height:160px;resize:none;padding:10px;border-radius:10px;background:transparent;border:1px solid var(--border);color:inherit;outline:none}
     .controls{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:120px}
     .charCount{font-size:12px;color:var(--muted)}
-    .sendBtn{background:var(--accent);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+    .sendBtn{background:var(--accent);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-weight:600}
     .sendBtn:disabled{opacity:0.6;cursor:default}
 
-    .photoUploadArea { padding:12px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:center; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent); }
-    .photoUploadArea input[type=file]{ flex:1; cursor:pointer; }
-    .photoUploadArea button{ background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer }
+    .replyPreview{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;margin:12px 16px;color:var(--muted);display:none}
 
-    .playersPanel{background:linear-gradient(180deg,var(--theme-1),var(--theme-2));border-left:1px solid var(--border);padding:14px;display:flex;flex-direction:column;gap:12px;height:100vh;overflow:auto}
-    .playersPanel h3{margin:0;font-size:15px;color:var(--muted)}
-    .playersList{display:flex;flex-direction:column;gap:6px;overflow:auto}
-    .player{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid transparent;color:var(--text)}
-    .player.offline{opacity:0.6}
-    .player .statusDot{width:10px;height:10px;border-radius:50%;margin-right:8px;flex-shrink:0}
-    .player.online .statusDot{background:#39d353;box-shadow:0 0 8px rgba(57,211,83,0.12)}
-    .player.offline .statusDot{background:#a0a0a0}
-    .player .playerName{font-weight:600}
-
-    .replyBtn{font-size:12px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border);cursor:pointer;color:var(--muted)}
-    .replyBtn:hover{background:rgba(255,255,255,0.03);color:var(--text)}
-
-    .blockedNavNotice{font-size:12px;color:#f9d3d3;padding:8px;background:rgba(255,50,50,0.06);border-radius:8px;margin-top:8px;display:none}
-
-    @media (max-width:980px){ .app{grid-template-columns:200px 1fr 140px} }
-    @media (max-width:720px){ .app{grid-template-columns:1fr} .sidebar,.playersPanel{display:none} }
+    @media (max-width:860px){
+      .app{grid-template-columns:200px 1fr}
+      .sidebar{padding:10px}
+    }
+    @media (max-width:720px){
+      .app{grid-template-columns:1fr}
+      .sidebar{display:none}
+    }
   </style>
 </head>
 <body>
   <div class="app" id="app">
     <aside class="sidebar" id="sidebar">
-      <div class="brand"><div class="dot" aria-hidden></div><div class="name">notcord</div></div>
+      <div class="brand"><div class="dot"></div>notcord</div>
 
       <div id="usernameSection">
         <div class="usernameBox" id="usernameBox">
@@ -120,15 +131,17 @@
         </div>
       </div>
 
+      <div style="height:6px"></div>
+
       <div class="channels" id="channels">
         <div class="channel active" data-id="general" role="button"># general</div>
         <div class="channel" data-id="general-2" role="button"># general 2</div>
         <div class="channel" data-id="photos" role="button"># photos</div>
-        <div class="channel" data-id="announcements" role="button"># announcements <span class="lock">🔒</span></div>
       </div>
 
       <div class="settings" aria-label="Appearance settings">
-        <label>Your name color
+        <label>
+          Your name color
           <div style="display:flex;gap:8px;align-items:center">
             <input type="color" id="nameColor" title="Name color" />
             <div style="flex:1"></div>
@@ -136,100 +149,68 @@
           </div>
         </label>
 
-        <label>Theme color 3 (chat bubbles & logo)
+        <label>
+          Accent color
           <div style="display:flex;gap:8px;align-items:center">
-            <input type="color" id="themeColor3" title="Theme color 3" />
+            <input type="color" id="accentColor" title="Accent color" />
             <div style="flex:1"></div>
-            <button id="resetTheme3" class="toggleBtn">Reset</button>
+            <button id="resetAccent" class="toggleBtn">Reset</button>
           </div>
         </label>
 
-        <div style="font-size:12px;color:var(--muted);padding-top:6px">
-          Input is locked — press "\" or "|" to open. Navigation to external sites is blocked.
-        </div>
+        <label>
+          Theme
+          <div style="display:flex;gap:8px;align-items:center">
+            <button id="themeToggle" class="toggleBtn">Toggle light/dark</button>
+            <div style="flex:1"></div>
+            <button id="resetTheme" class="toggleBtn">Reset</button>
+          </div>
+        </label>
 
-        <div class="blockedNavNotice" id="blockedNavNotice">Navigation to external sites is blocked in this client.</div>
+        <div style="font-size:12px;color:var(--muted);padding-top:6px">Username and appearance are saved in this browser.</div>
       </div>
     </aside>
 
     <section class="chatPanel">
-      <div class="chatBox" id="chatBox">
-        <div class="header">
-          <h2 id="channelTitle"># general</h2>
-          <div class="spacer"></div>
-          <div class="right">
-            <div id="status" class="status">Connecting...</div>
-            <div id="typingIndicator" class="typing"></div>
-          </div>
-        </div>
+      <div class="header">
+        <h2 id="channelTitle"># general</h2>
+        <div class="spacer"></div>
+        <div id="status" style="color:var(--muted);font-size:13px">Connecting...</div>
+      </div>
 
-        <div class="messages" id="messages" role="log" aria-atomic="false"></div>
+      <div class="replyPreview" id="replyPreview">Replying to <span id="replyToName"></span>: <span id="replyToText"></span> <button id="cancelReply" style="margin-left:8px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 6px;border-radius:6px;cursor:pointer">Cancel</button></div>
 
-        <!-- Reply preview (shown when replying) -->
-        <div id="replyPreviewContainer" style="display:none;padding:0 16px;">
-          <div class="replyPreview" id="replyPreview">
-            Replying to <strong id="replyToName"></strong>: <span id="replyToText"></span>
-            <span class="replyCancel" id="cancelReply">✕</span>
-          </div>
-        </div>
+      <div class="messages" id="messages" role="log" aria-atomic="false"></div>
 
-        <div class="inputArea" id="inputWrapper" style="display:none">
-          <textarea id="messageInput" placeholder="Message (Shift+Enter for newline)" maxlength="100"></textarea>
-          <div class="controls">
-            <div class="charCount" id="charCount">0 / 100</div>
-            <button id="sendBtn" class="sendBtn" disabled>Send</button>
-          </div>
-        </div>
-
-        <div class="photoUploadArea" id="photoUploadWrapper" style="display:none">
-          <input type="file" id="photoInput" accept="image/*" />
-          <button id="uploadPhotoBtn" disabled>Upload Photo</button>
+      <div class="inputArea" id="inputArea" style="display:none">
+        <textarea id="messageInput" placeholder="Message (Shift+Enter for newline)" maxlength="100"></textarea>
+        <div class="controls">
+          <div class="charCount" id="charCount">0 / 100</div>
+          <button id="sendBtn" class="sendBtn" disabled>Send</button>
         </div>
       </div>
     </section>
-
-    <aside class="playersPanel" id="playersPanel">
-      <h3>Players</h3>
-      <div id="playersStatus" style="font-size:13px;color:var(--muted)">Loading...</div>
-      <div style="height:6px"></div>
-      <div class="playersList" id="playersList" aria-live="polite"></div>
-    </aside>
   </div>
 
   <script>
     (function(){
-      // Endpoints
+      // Channel endpoints
       const CHANNELS = {
         general: 'https://68e839b2f2707e6128ca35e1.mockapi.io/chat',
         'general-2': 'https://68eeed86b06cc802829ba196.mockapi.io/chat2',
-        photos: 'https://68eeed86b06cc802829ba196.mockapi.io/photos',
-        announcements: null
+        photos:  'https://68eeed86b06cc802829ba196.mockapi.io/photos'
       };
-      const PLAYERS_API = 'https://68e839b2f2707e6128ca35e1.mockapi.io/players';
 
-      // simple bad words (replace with real list)
-      const BAD_WORDS = ['badword1','плохоеcлово1'];
-
-      // UI refs
+      // DOM
+      const rootEl = document.documentElement;
       const channelsEl = document.getElementById('channels');
       const channelTitleEl = document.getElementById('channelTitle');
       const messagesEl = document.getElementById('messages');
       const statusEl = document.getElementById('status');
-      const typingIndicatorEl = document.getElementById('typingIndicator');
       const messageInput = document.getElementById('messageInput');
       const sendBtn = document.getElementById('sendBtn');
       const charCountEl = document.getElementById('charCount');
-      const inputWrapper = document.getElementById('inputWrapper');
-      const photoUploadWrapper = document.getElementById('photoUploadWrapper');
-      const photoInput = document.getElementById('photoInput');
-      const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
-
-      const replyPreviewContainer = document.getElementById('replyPreviewContainer');
-      const replyToNameEl = document.getElementById('replyToName');
-      const replyToTextEl = document.getElementById('replyToText');
-      const cancelReplyBtn = document.getElementById('cancelReply');
-
-      const blockedNavNotice = document.getElementById('blockedNavNotice');
+      const inputArea = document.getElementById('inputArea');
 
       const usernameBox = document.getElementById('usernameBox');
       const usernameInput = document.getElementById('usernameInput');
@@ -238,156 +219,107 @@
       const usernameDisplay = document.getElementById('usernameDisplay');
 
       const nameColorInput = document.getElementById('nameColor');
-      const themeColor3Input = document.getElementById('themeColor3');
+      const accentColorInput = document.getElementById('accentColor');
       const resetNameColorBtn = document.getElementById('resetNameColor');
-      const resetTheme3Btn = document.getElementById('resetTheme3');
+      const resetAccentBtn = document.getElementById('resetAccent');
+      const themeToggleBtn = document.getElementById('themeToggle');
+      const resetThemeBtn = document.getElementById('resetTheme');
 
-      const playersListEl = document.getElementById('playersList');
-      const playersStatusEl = document.getElementById('playersStatus');
+      const replyPreview = document.getElementById('replyPreview');
+      const replyToName = document.getElementById('replyToName');
+      const replyToText = document.getElementById('replyToText');
+      const cancelReplyBtn = document.getElementById('cancelReply');
 
       // state
       let activeChannel = localStorage.getItem('notcord_channel') || 'general';
-      let apiBase = CHANNELS[activeChannel] || null;
+      let apiBase = CHANNELS[activeChannel];
       let polling = null;
-      let playersPolling = null;
-      let heartbeatInterval = null;
       let isSending = false;
+      let allowUnload = false; // only allow closing when set true by backslash
+
+      // user settings
+      let username = localStorage.getItem('notcord_username') || '';
+      let nameColor = localStorage.getItem('notcord_nameColor') || '#ffcc00';
+      let accentColor = localStorage.getItem('notcord_accent') || '#5865f2';
+      let theme = localStorage.getItem('notcord_theme') || 'dark'; // 'dark' or 'light'
       const MAX_CHARS = 100;
 
       // reply state
-      let currentReply = null; // { username, text, messageId } or null
+      let currentReply = null; // { username, message }
 
-      // typing map
-      const TYPING_KEY = 'notcord_typing_v4';
-      const TYPING_EXPIRE_MS = 5000;
-
-      // user info
-      let username = localStorage.getItem('notcord_username') || '';
-      let nameColor = localStorage.getItem('notcord_nameColor') || '#ffcc00';
-      let themeColor3 = localStorage.getItem('notcord_theme3') || '#0b2233';
-      let localPlayerId = localStorage.getItem('notcord_playerId') || null;
-
-      // mute map
-      const muteMap = new Map();
-
-      // anti-spam basic
-      const MIN_SECONDS_BETWEEN_MESSAGES = 2;
-      const lastSentAt = {}; // username -> timestamp
-      const lastMessageText = {}; // username -> text
-
-      // apply theme
-      function applyTheme(){ document.documentElement.style.setProperty('--theme-3', themeColor3); }
-      function initializeAppearanceInputs(){ nameColorInput.value = nameColor; themeColor3Input.value = themeColor3; }
-
-      // util
-      function setStatus(txt){ statusEl.textContent = txt; }
-      function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-      function formatTime(iso){ try{ const d=new Date(iso); if(isNaN(d)) return ''; return d.toLocaleString([], {hour:'2-digit', minute:'2-digit'});}catch(e){return ''} }
-
-      // Navigation blocking
-      function blockNavigationUI(){
-        blockedNavNotice.style.display = 'block';
-        setTimeout(()=> blockedNavNotice.style.display = 'none', 3000);
-      }
-      // Intercept anchor clicks
-      document.addEventListener('click', (e)=>{
-        const a = e.target.closest('a');
-        if(a){
-          e.preventDefault();
-          blockNavigationUI();
-        }
-      }, true);
-      // Override window.open
-      window.open = function(){ blockNavigationUI(); return null; };
-      // Prevent location changes by overriding assign/replace and setting href
-      try{
-        Object.defineProperty(window, 'location', {
-          configurable: false,
-          enumerable: true,
-          get(){ return window.location; },
-          set(v){ blockNavigationUI(); }
-        });
-      }catch(e){ /* some browsers won't allow redefining location; still override assign/replace below */ }
-      if(window.location){
-        window.location.assign = function(){ blockNavigationUI(); };
-        window.location.replace = function(){ blockNavigationUI(); };
-      }
-      // Also intercept attempts to change top/window location via scripts
-      const originalPushState = history.pushState;
-      history.pushState = function(){ blockNavigationUI(); return originalPushState.apply(this, arguments); };
-
-      // Typing localstorage helpers
-      function readTypingMap(){ try{ return JSON.parse(localStorage.getItem(TYPING_KEY)||'{}'); }catch(e){ return {}; } }
-      function writeTypingMap(m){ try{ localStorage.setItem(TYPING_KEY, JSON.stringify(m)); }catch(e){} }
-      function updateTypingUI(){
-        const map = readTypingMap(); const channelMap = map[activeChannel] || {}; const now = Date.now();
-        const typers = Object.keys(channelMap).filter(u => u !== username && (now - channelMap[u]) <= TYPING_EXPIRE_MS);
-        if(!typers.length) typingIndicatorEl.textContent = '';
-        else if(typers.length === 1) typingIndicatorEl.textContent = typers[0] + ' is typing...';
-        else typingIndicatorEl.textContent = typers[0] + ' and ' + (typers.length-1) + ' others are typing...';
-      }
-      window.addEventListener('storage', (e)=> { if(e.key === TYPING_KEY) updateTypingUI(); });
-
-      // muting
-      function isUserMuted(u){ const t = muteMap.get(u); if(!t) return false; if(Date.now()>t){ muteMap.delete(u); return false; } return true; }
-      function muteUser(u, seconds=120){ muteMap.set(u, Date.now()+seconds*1000); if(u===username){ sendBtn.disabled = true; messageInput.disabled = true; setStatus('You are muted for bad language.'); setTimeout(()=>{ if(!isUserMuted(u)){ sendBtn.disabled=false; messageInput.disabled=false; setStatus('You can chat again.'); } }, seconds*1000); } }
-
-      function containsBadWords(text){
-        if(!text) return false;
-        const lower = text.toLowerCase();
-        return BAD_WORDS.some(w => w && lower.includes(w));
+      // initial UI state
+      function applyTheme(){
+        rootEl.setAttribute('data-theme', theme);
+        document.documentElement.style.setProperty('--accent', accentColor);
       }
 
-      // render message with reply support
-      function renderMessage(msg, localUser){
-        if(msg.privateTo && !(msg.privateTo === localUser || msg.username === localUser)) return null;
+      function initializeAppearanceInputs(){
+        nameColorInput.value = nameColor;
+        accentColorInput.value = accentColor;
+      }
+
+      function setStatus(txt){
+        statusEl.textContent = txt;
+      }
+
+      function renderMessage(msg, isMe=false){
         const container = document.createElement('div');
-        const author = msg.username || msg.name || 'Unknown';
-        const isMe = author === localUser;
         container.className = 'message' + (isMe ? ' me' : '');
-        container.dataset.msgId = msg.id || '';
 
-        const bubble = document.createElement('div'); bubble.className = 'bubble';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
 
-        const meta = document.createElement('div'); meta.className = 'meta';
-        const nameEl = document.createElement('span'); nameEl.className = 'name'; nameEl.textContent = author;
-        if(msg.nameColor) nameEl.style.color = msg.nameColor;
-        else if(isMe && nameColor) nameEl.style.color = nameColor;
-        const timeEl = document.createElement('span'); timeEl.className = 'time'; timeEl.textContent = formatTime(msg.createdAt || msg.created_at || msg.timestamp || msg.time || '');
-        meta.appendChild(nameEl);
-        meta.appendChild(timeEl);
-        bubble.appendChild(meta);
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const name = document.createElement('span');
+        name.className = 'name';
+        const author = msg.username || msg.name || msg.author || 'Unknown';
+        name.textContent = author;
+        if(msg.nameColor) name.style.color = msg.nameColor;
+        else if(author === username && nameColor) name.style.color = nameColor;
 
-        // reply block
+        const time = document.createElement('span');
+        time.className = 'time';
+        const created = msg.createdAt || msg.created_at || msg.timestamp || msg.time || '';
+        time.textContent = formatTime(created);
+
+        meta.appendChild(name);
+        meta.appendChild(time);
+
+        // reply preview if present
         if(msg.replyTo && typeof msg.replyTo === 'object'){
-          try{
-            const rp = msg.replyTo;
-            const rpDiv = document.createElement('div'); rpDiv.className = 'replyPreview';
-            rpDiv.innerHTML = `<strong>${escapeHtml(rp.username || 'unknown')}</strong>: ${escapeHtml((rp.message||'').slice(0,120))}`;
-            bubble.appendChild(rpDiv);
-          }catch(e){}
+          const rp = document.createElement('div');
+          rp.style.fontSize = '13px';
+          rp.style.color = 'var(--muted)';
+          rp.style.padding = '6px';
+          rp.style.borderRadius = '8px';
+          rp.style.background = 'rgba(255,255,255,0.02)';
+          rp.style.marginBottom = '6px';
+          rp.textContent = (msg.replyTo.username || 'unknown') + ': ' + ((msg.replyTo.message||'').slice(0,120));
+          bubble.appendChild(rp);
         }
 
-        // photo
-        if(msg.imageUrl){
-          const pm = document.createElement('div'); pm.className='photoMessage';
-          const img = document.createElement('img'); img.src = msg.imageUrl; img.alt = msg.message || 'photo';
-          img.addEventListener('click', ()=> window.open(img.src,'_blank'));
-          pm.appendChild(img);
-          if(msg.message){
-            const caption = document.createElement('div'); caption.className='text'; caption.textContent = msg.message;
-            pm.appendChild(caption);
-          }
-          bubble.appendChild(pm);
-        } else {
-          const text = document.createElement('div'); text.className = 'text'; text.textContent = msg.message || msg.text || msg.content || '';
-          bubble.appendChild(text);
-        }
+        const text = document.createElement('div');
+        text.className = 'text';
+        text.textContent = msg.message || msg.text || msg.content || '';
 
-        // actions (reply)
-        const actions = document.createElement('div'); actions.style.marginTop = '6px';
-        const replyBtn = document.createElement('button'); replyBtn.className = 'replyBtn'; replyBtn.textContent = 'Reply';
-        replyBtn.addEventListener('click', ()=> startReply(msg));
+        bubble.appendChild(meta);
+        bubble.appendChild(text);
+
+        // reply action
+        const actions = document.createElement('div');
+        actions.style.marginTop = '6px';
+        const replyBtn = document.createElement('button');
+        replyBtn.textContent = 'Reply';
+        replyBtn.style.background = 'transparent';
+        replyBtn.style.border = '1px solid var(--border)';
+        replyBtn.style.color = 'var(--muted)';
+        replyBtn.style.padding = '6px 8px';
+        replyBtn.style.borderRadius = '8px';
+        replyBtn.style.cursor = 'pointer';
+        replyBtn.addEventListener('click', () => {
+          startReply(msg);
+        });
         actions.appendChild(replyBtn);
         bubble.appendChild(actions);
 
@@ -395,452 +327,285 @@
         return container;
       }
 
-      // reply flow
-      function startReply(msg){
-        currentReply = { username: msg.username || msg.name || 'Unknown', message: msg.message || msg.text || msg.content || '', messageId: msg.id || null };
-        replyPreviewContainer.style.display = 'block';
-        replyToNameEl.textContent = currentReply.username;
-        replyToTextEl.textContent = (currentReply.message||'').slice(0,120);
-        // ensure input is visible
-        showInputs();
-        messageInput.focus();
-      }
-      cancelReplyBtn.addEventListener('click', ()=>{
-        currentReply = null;
-        replyPreviewContainer.style.display = 'none';
-      });
-
-      // show/hide inputs controlled by keypress "\" or "|"
-      function hideInputs(){
-        inputWrapper.style.display = 'none';
-        photoUploadWrapper.style.display = 'none';
-      }
-      function showInputs(){
-        if(activeChannel === 'photos'){ inputWrapper.style.display = 'none'; photoUploadWrapper.style.display = 'flex'; }
-        else { inputWrapper.style.display = 'flex'; photoUploadWrapper.style.display = 'none'; }
-      }
-      hideInputs();
-
-      // toggle on keydown for \ or |
-      window.addEventListener('keydown', (e)=>{
-        // when user presses backslash (\) or vertical bar (|) keys
-        // key for backslash is '\' ; for pipe, same key with shift on many layouts; use e.key
-        if(e.key === '\\' || e.key === '|'){
-          if(inputWrapper.style.display === 'none' && photoUploadWrapper.style.display === 'none'){
-            showInputs();
-            messageInput.focus();
-          } else {
-            hideInputs();
-          }
-          e.preventDefault();
-        }
-      });
-
-      // message fetch
-      async function safeFetch(url, method='GET', body=null){
+      function formatTime(iso){
         try{
-          const opts = { method, headers:{} };
-          if(body !== null){ opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
-          const r = await fetch(url, opts);
-          if(!r.ok){ console.warn('safeFetch non-OK', r.status, url); return null; }
-          if(r.status === 204) return null;
-          return await r.json();
-        }catch(e){ console.warn('safeFetch failed', e, url); return null; }
+          const d = new Date(iso);
+          if(isNaN(d)) return '';
+          return d.toLocaleString([], { hour: '2-digit', minute: '2-digit' });
+        }catch(e){ return ''; }
       }
 
+      function scrollToBottom(){
+        requestAnimationFrame(()=> messagesEl.scrollTop = messagesEl.scrollHeight);
+      }
+
+      // Fetch messages for current channel
       async function fetchMessages(){
-        if(activeChannel === 'announcements'){
-          const notes = [
-            { id:'a1', username:'NOTCORD', message:'Welcome!', createdAt:new Date().toISOString(), nameColor:'#ff7a18' },
-            { id:'a2', username:'NOTCORD', message:'Maintenance scheduled Sunday 02:00 UTC.', createdAt:new Date(Date.now()-6*3600*1000).toISOString(), nameColor:'#18a0ff' }
-          ];
-          messagesEl.innerHTML = '';
-          for(const m of notes){ const el = renderMessage(m, username); if(el) messagesEl.appendChild(el); }
-          scrollToBottom();
-          setStatus('Announcements (read-only)');
-          return;
-        }
         if(!apiBase) return;
         try{
           const res = await fetch(apiBase);
-          if(!res.ok) throw new Error('Fetch failed: '+res.status);
+          if(!res.ok) throw new Error('Fetch failed: ' + res.status);
           const data = await res.json();
           if(!Array.isArray(data)) return;
-          data.sort((a,b)=> {
+          data.sort((a,b)=>{
             const ta = new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || (Number(a.id)||0);
             const tb = new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || (Number(b.id)||0);
             return ta - tb;
           });
-          const wasAtBottom = isAtBottom();
           messagesEl.innerHTML = '';
-          for(const m of data){
-            // server might store replyTo as object or id; we don't resolve server reply object here
-            const el = renderMessage(m, username);
-            if(el) messagesEl.appendChild(el);
+          for(const msg of data){
+            const isMe = ( (msg.username || msg.name || msg.author) === username );
+            const el = renderMessage(msg, isMe);
+            messagesEl.appendChild(el);
           }
-          if(wasAtBottom) scrollToBottom();
-          setStatus('Connected — '+data.length+' messages');
-        }catch(e){ console.error(e); setStatus('Error fetching messages'); }
+          scrollToBottom();
+          setStatus('Connected — ' + data.length + ' messages');
+        }catch(err){
+          console.error(err);
+          setStatus('Error fetching messages');
+        }
       }
 
-      // scroll helpers
-      function isAtBottom(){ return messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 80; }
-      function scrollToBottom(){ requestAnimationFrame(()=> messagesEl.scrollTop = messagesEl.scrollHeight); }
-
-      // post message (with reply payload)
-      async function postMessage(rawText){
-        if(!rawText || !rawText.trim()) return;
+      // Post with optimistic UI and include reply payload if set
+      async function postMessage(text){
+        if(!text || !text.trim()) return;
         if(!username){ setStatus('Set username first'); return; }
-        if(isUserMuted(username)){ setStatus('You are muted and cannot send messages.'); return; }
         if(!apiBase){ setStatus('No channel selected'); return; }
-
-        // anti-cheat
-        if(containsBadWords(rawText)){
-          muteUser(username, 120);
-          setStatus('Forbidden words detected. You are muted for 2 minutes.');
-          return;
-        }
-
-        // spam: cooldown (simple)
-        const now = Date.now();
-        if(lastSentAt[username] && (now - lastSentAt[username]) < MIN_SECONDS_BETWEEN_MESSAGES*1000){
-          setStatus('You are sending messages too quickly. Slow down.');
-          return;
-        }
-        // duplicate message check
-        if(lastMessageText[username] && lastMessageText[username] === rawText && (now - (lastSentAt[username]||0)) < 5000){
-          setStatus('Duplicate message blocked.');
-          return;
-        }
-
-        isSending = true; sendBtn.disabled = true;
-
-        let messageText = rawText.trim();
+        if(isSending) return;
+        isSending = true;
+        sendBtn.disabled = true;
 
         const payload = {
-          username,
-          message: messageText,
-          createdAt: new Date().toISOString(),
-          nameColor
+          username: username,
+          message: text.trim(),
+          createdAt: new Date().toISOString()
         };
+        if(currentReply) payload.replyTo = { username: currentReply.username, message: currentReply.message };
 
-        // include replyTo if present (send object with username + message excerpt)
-        if(currentReply){
-          payload.replyTo = { username: currentReply.username, message: currentReply.message, messageId: currentReply.messageId };
-        }
-
-        // optimistic render
-        const optimisticEl = renderMessage(payload, username);
-        if(optimisticEl) messagesEl.appendChild(optimisticEl);
+        const optimisticEl = renderMessage(payload, true);
+        messagesEl.appendChild(optimisticEl);
         scrollToBottom();
 
-        // record spam info
-        lastSentAt[username] = Date.now();
-        lastMessageText[username] = messageText;
-
         try{
-          const res = await fetch(apiBase, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const res = await fetch(apiBase, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+          });
           if(!res.ok) throw new Error('Send failed: ' + res.status);
-          // after successfully posting, refresh
-          currentReply = null;
-          replyPreviewContainer.style.display = 'none';
+          // reconcile by refetching
           await fetchMessages();
-        }catch(e){
-          console.error(e);
+        }catch(err){
+          console.error(err);
           setStatus('Failed to send message');
         }finally{
-          isSending = false; sendBtn.disabled = false;
+          isSending = false;
+          sendBtn.disabled = false;
+          // clear reply
+          currentReply = null;
+          replyPreview.style.display = 'none';
         }
       }
 
-      // photo upload
-      async function uploadPhoto(file){
-        if(!file) return;
-        if(!username){ setStatus('Set username first'); return; }
-        if(isUserMuted(username)){ setStatus('You are muted and cannot upload'); return; }
-        if(containsBadWords(file.name)){ muteUser(username,120); setStatus('Forbidden filename. You are muted.'); return; }
-
-        const reader = new FileReader();
-        reader.onload = async (e)=>{
-          const dataUrl = e.target.result;
-          const payload = { username, imageUrl: dataUrl, message:'', createdAt: new Date().toISOString(), nameColor };
-          isSending = true; uploadPhotoBtn.disabled = true;
-          try{
-            const res = await fetch(CHANNELS.photos, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-            if(!res.ok) throw new Error('Upload failed: ' + res.status);
-            setStatus('Photo uploaded');
-            photoInput.value = '';
-            await fetchMessages();
-          }catch(e){ console.error(e); setStatus('Photo upload failed'); }
-          finally{ isSending = false; uploadPhotoBtn.disabled = false; }
-        };
-        reader.readAsDataURL(file);
+      // Channel switching
+      function setActiveChannel(id){
+        activeChannel = id;
+        apiBase = CHANNELS[id];
+        localStorage.setItem('notcord_channel', id);
+        // UI active state
+        Array.from(channelsEl.children).forEach(ch => ch.classList.toggle('active', ch.dataset.id === id));
+        channelTitleEl.textContent = '# ' + id;
+        // restart polling for new channel
+        if(polling) clearInterval(polling);
+        fetchMessages();
+        polling = setInterval(fetchMessages, 4000);
       }
 
-      // players / leaderboard
-      function normalizePlayerName(p){ return p.name || p.username || p.nick || p.displayName || (p.id?String(p.id):String(p)); }
-      function detectPlayerOnline(p){
-        try{
-          if(p.lastSeen){
-            const last = Date.parse(p.lastSeen);
-            if(!isNaN(last) && (Date.now()-last) <= 15000) return true;
-          }
-        }catch(e){}
-        return false;
+      // Reply flow
+      function startReply(msg){
+        currentReply = { username: msg.username || msg.name || 'Unknown', message: msg.message || msg.text || msg.content || '' };
+        replyToName.textContent = currentReply.username;
+        replyToText.textContent = currentReply.message.length > 120 ? (currentReply.message.slice(0,120) + '...') : currentReply.message;
+        replyPreview.style.display = 'block';
+        // ensure input visible
+        inputArea.style.display = 'flex';
+        messageInput.focus();
       }
+      cancelReplyBtn.addEventListener('click', ()=> {
+        currentReply = null;
+        replyPreview.style.display = 'none';
+      });
 
-      async function fetchPlayers(){
-        try{
-          const res = await fetch(PLAYERS_API);
-          if(!res.ok) throw new Error('Players fetch failed: '+res.status);
-          const data = await res.json();
-          if(!Array.isArray(data)){ playersStatusEl.textContent='No players'; playersListEl.innerHTML=''; return; }
-          const online = [], offline = [];
-          for(const p of data){
-            const name = normalizePlayerName(p);
-            const on = detectPlayerOnline(p);
-            if(on) online.push({name, raw:p});
-            else offline.push({name, raw:p});
-          }
-          if(username){
-            const hasOn = online.some(x=>x.name===username);
-            const hasOff = offline.some(x=>x.name===username);
-            if(!hasOn && !hasOff) online.unshift({ name:username, raw:{name:username,lastSeen:new Date().toISOString(), nameColor}, local:true });
-          }
-          playersListEl.innerHTML = '';
-          const headOn = document.createElement('div'); headOn.style.color='var(--muted)'; headOn.style.fontSize='13px'; headOn.textContent = 'Online ('+online.length+')';
-          playersListEl.appendChild(headOn);
-          for(const p of online){
-            const item = document.createElement('div'); item.className='player online';
-            const left = document.createElement('div'); left.style.display='flex'; left.style.alignItems='center';
-            const dot = document.createElement('span'); dot.className='statusDot';
-            const nameSpan = document.createElement('div'); nameSpan.className='playerName';
-            nameSpan.innerHTML = escapeHtml(p.name) + (p.local ? ' <span style="font-size:12px;color:var(--muted)">(you)</span>' : '');
-            const serverColor = (p.raw && (p.raw.nameColor || p.raw.color)) ? (p.raw.nameColor || p.raw.color) : null;
-            if(serverColor) nameSpan.style.color = serverColor;
-            else if(p.local && nameColor) nameSpan.style.color = nameColor;
-            left.appendChild(dot); left.appendChild(nameSpan);
-            const right = document.createElement('div'); right.style.fontSize='12px'; right.style.color='var(--muted)'; right.textContent='online';
-            item.appendChild(left); item.appendChild(right);
-            playersListEl.appendChild(item);
-          }
-          const spacer = document.createElement('div'); spacer.style.height='8px'; playersListEl.appendChild(spacer);
-          const headOff = document.createElement('div'); headOff.style.color='var(--muted)'; headOff.style.fontSize='13px'; headOff.textContent='Offline ('+offline.length+')';
-          playersListEl.appendChild(headOff);
-          for(const p of offline){
-            const item = document.createElement('div'); item.className='player offline';
-            const left = document.createElement('div'); left.style.display='flex'; left.style.alignItems='center';
-            const dot = document.createElement('span'); dot.className='statusDot';
-            const nameSpan = document.createElement('div'); nameSpan.className='playerName'; nameSpan.textContent = p.name;
-            const serverColor = (p.raw && (p.raw.nameColor || p.raw.color)) ? (p.raw.nameColor || p.raw.color) : null;
-            if(serverColor) nameSpan.style.color = serverColor;
-            left.appendChild(dot); left.appendChild(nameSpan);
-            const right = document.createElement('div'); right.style.fontSize='12px'; right.style.color='var(--muted)'; right.textContent='offline';
-            item.appendChild(left); item.appendChild(right);
-            playersListEl.appendChild(item);
-          }
-          playersStatusEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
-        }catch(e){ console.error(e); playersStatusEl.textContent='Error loading players'; playersListEl.innerHTML=''; }
-      }
-
-      // upsert local player
-      async function upsertLocalPlayer(){
-        if(!username) return;
-        try{
-          const res = await fetch(PLAYERS_API);
-          if(!res.ok) throw new Error('Players fetch failed: '+res.status);
-          const data = await res.json();
-          if(!Array.isArray(data)) return;
-          const found = data.find(p => normalizePlayerName(p) === username);
-          const now = new Date().toISOString();
-          if(found){
-            localPlayerId = found.id;
-            localStorage.setItem('notcord_playerId', localPlayerId);
-            await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', {...found, name: username, lastSeen: now, nameColor});
-          } else {
-            const created = await safeFetch(PLAYERS_API, 'POST', { name: username, lastSeen: now, nameColor });
-            if(created && created.id){ localPlayerId = created.id; localStorage.setItem('notcord_playerId', localPlayerId); }
-          }
-        }catch(e){ console.warn('upsertLocalPlayer', e); } finally{ fetchPlayers().catch(()=>{}); }
-      }
-
-      async function setLocalPlayerOnlineState(isOnline){
-        if(!localPlayerId) return;
-        try{
-          const cur = await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'GET', null);
-          if(!cur) return;
-          const updated = { ...cur, online: !!isOnline, lastSeen: new Date().toISOString(), name: username || cur.name, nameColor: nameColor || cur.nameColor };
-          await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', updated);
-        }catch(e){ console.warn('setLocalPlayerOnlineState', e); } finally{ fetchPlayers().catch(()=>{}); }
-      }
-
-      // heartbeat
-      function startHeartbeat(){
-        stopHeartbeat();
-        if(!username || !localPlayerId) return;
-        heartbeatInterval = setInterval(async ()=>{
-          try{ await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { lastSeen: new Date().toISOString(), online:true, name: username, nameColor }); }catch(e){ console.warn('heartbeat', e); }
-        }, 5000);
-      }
-      function stopHeartbeat(){ if(heartbeatInterval){ clearInterval(heartbeatInterval); heartbeatInterval = null; } }
-
-      // input helpers
+      // Input and controls
       function updateCharCountAndState(){
         let val = messageInput.value || '';
-        if(val.length > MAX_CHARS) messageInput.value = val.slice(0, MAX_CHARS);
-        charCountEl.textContent = `${(messageInput.value||'').length} / ${MAX_CHARS}`;
-        const canSend = username && (messageInput.value||'').trim().length > 0 && activeChannel !== 'announcements' && activeChannel !== 'photos' && !isSending && !isUserMuted(username);
-        sendBtn.disabled = !canSend;
+        if(val.length > MAX_CHARS){
+          messageInput.value = messageInput.value.slice(0, MAX_CHARS);
+          val = messageInput.value;
+        }
+        charCountEl.textContent = `${val.length} / ${MAX_CHARS}`;
+        const canSend = username && val.trim().length > 0;
+        sendBtn.disabled = !canSend || isSending;
       }
 
-      // event bindings
       channelsEl.addEventListener('click', (e)=>{
         const ch = e.target.closest('.channel');
         if(!ch) return;
-        setActiveChannel(ch.dataset.id).catch(()=>{});
+        setActiveChannel(ch.dataset.id);
       });
 
-      setNameBtn.addEventListener('click', async ()=>{
+      setNameBtn.addEventListener('click', ()=>{
         let val = usernameInput.value.trim();
-        if(!val) val = 'Guest' + Math.floor(Math.random()*9000 + 1000);
+        if(!val) {
+          val = 'Guest' + Math.floor(Math.random()*9000 + 1000);
+        }
         username = val;
         localStorage.setItem('notcord_username', username);
         usernameBox.style.display = 'none';
         usernameLocked.style.display = 'flex';
         usernameDisplay.textContent = username;
-        await upsertLocalPlayer();
-        await setLocalPlayerOnlineState(true);
-        startHeartbeat();
-        await fetchPlayers();
+        setStatus('Username set: ' + username);
         updateCharCountAndState();
       });
 
       sendBtn.addEventListener('click', ()=>{
         const txt = messageInput.value;
+        if(!txt.trim()) return;
         postMessage(txt);
         messageInput.value = '';
         updateCharCountAndState();
-        // clear typing entry
-        const map = readTypingMap(); if(map[activeChannel] && map[activeChannel][username]){ delete map[activeChannel][username]; writeTypingMap(map); updateTypingUI(); }
       });
 
-      messageInput.addEventListener('input', ()=>{
-        updateCharCountAndState();
-        if(username){
-          const map = readTypingMap(); map[activeChannel] = map[activeChannel] || {}; map[activeChannel][username] = Date.now(); writeTypingMap(map); updateTypingUI();
+      messageInput.addEventListener('input', (e)=>{
+        if(messageInput.value.length > MAX_CHARS){
+          messageInput.value = messageInput.value.slice(0, MAX_CHARS);
         }
+        updateCharCountAndState();
       });
 
       messageInput.addEventListener('keydown', (e)=>{
-        if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); if(!sendBtn.disabled) sendBtn.click(); }
+        if(e.key === 'Enter' && !e.shiftKey){
+          e.preventDefault();
+          if(!sendBtn.disabled) sendBtn.click();
+        }
       });
 
-      photoInput.addEventListener('change', ()=> uploadPhotoBtn.disabled = !photoInput.files.length );
-      uploadPhotoBtn.addEventListener('click', ()=> { if(photoInput.files.length) uploadPhoto(photoInput.files[0]); });
+      // appearance inputs
+      nameColorInput.addEventListener('input', (e)=> {
+        nameColor = e.target.value;
+        localStorage.setItem('notcord_nameColor', nameColor);
+        Array.from(messagesEl.querySelectorAll('.meta .name')).forEach(el=>{
+          if(el.textContent === username) el.style.color = nameColor;
+        });
+      });
+      resetNameColorBtn.addEventListener('click', ()=>{
+        nameColor = '#ffcc00';
+        nameColorInput.value = nameColor;
+        localStorage.setItem('notcord_nameColor', nameColor);
+        Array.from(messagesEl.querySelectorAll('.meta .name')).forEach(el=>{
+          if(el.textContent === username) el.style.color = nameColor;
+        });
+      });
 
-      nameColorInput.addEventListener('input', async (e)=>{ nameColor = e.target.value; localStorage.setItem('notcord_nameColor', nameColor); if(localPlayerId) await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { name: username, lastSeen: new Date().toISOString(), nameColor }); Array.from(document.querySelectorAll('.meta .name')).forEach(el=>{ if(el.textContent===username) el.style.color = nameColor; }); fetchPlayers().catch(()=>{}); });
-      resetNameColorBtn.addEventListener('click', ()=>{ nameColor='#ffcc00'; nameColorInput.value = nameColor; localStorage.setItem('notcord_nameColor', nameColor); });
+      accentColorInput.addEventListener('input', (e)=> {
+        accentColor = e.target.value;
+        localStorage.setItem('notcord_accent', accentColor);
+        document.documentElement.style.setProperty('--accent', accentColor);
+      });
+      resetAccentBtn.addEventListener('click', ()=>{
+        accentColor = '#5865f2';
+        accentColorInput.value = accentColor;
+        localStorage.setItem('notcord_accent', accentColor);
+        document.documentElement.style.setProperty('--accent', accentColor);
+      });
 
-      themeColor3Input.addEventListener('input', (e)=>{ themeColor3 = e.target.value; localStorage.setItem('notcord_theme3', themeColor3); applyTheme(); });
-      resetTheme3Btn.addEventListener('click', ()=>{ themeColor3='#0b2233'; themeColor3Input.value = themeColor3; localStorage.setItem('notcord_theme3', themeColor3); applyTheme(); });
+      themeToggleBtn.addEventListener('click', ()=> {
+        theme = (theme === 'dark') ? 'light' : 'dark';
+        localStorage.setItem('notcord_theme', theme);
+        applyTheme();
+      });
+      resetThemeBtn.addEventListener('click', ()=> {
+        theme = 'dark';
+        localStorage.setItem('notcord_theme', theme);
+        applyTheme();
+      });
 
-      // set active channel
-      async function setActiveChannel(id){
-        activeChannel = id;
-        apiBase = CHANNELS[id] || null;
-        localStorage.setItem('notcord_channel', id);
-        Array.from(channelsEl.children).forEach(ch => ch.classList.toggle('active', ch.dataset.id === id));
-        channelTitleEl.textContent = '# ' + id;
-        // show/hide input
-        if(inputWrapper.style.display !== 'none' || photoUploadWrapper.style.display !== 'none'){
-          // if input currently visible, switch displayed element depending on channel
-          if(activeChannel === 'photos'){ inputWrapper.style.display = 'none'; photoUploadWrapper.style.display = 'flex'; }
-          else { photoUploadWrapper.style.display = 'none'; inputWrapper.style.display = 'flex'; }
-        }
-        if(polling) clearInterval(polling);
-        await fetchMessages();
-        if(id !== 'announcements') polling = setInterval(fetchMessages, 4000);
-      }
-
-      // typing helpers stored
-      function readTypingMap(){ try{ return JSON.parse(localStorage.getItem(TYPING_KEY)||'{}'); }catch(e){ return {}; } }
-      function writeTypingMap(m){ try{ localStorage.setItem(TYPING_KEY, JSON.stringify(m)); }catch(e){} }
-      function cleanupTypingMap(){
-        const map = readTypingMap();
-        const now = Date.now();
-        let changed = false;
-        for(const ch of Object.keys(map)){
-          for(const u of Object.keys(map[ch])){
-            if(now - map[ch][u] > TYPING_EXPIRE_MS){ delete map[ch][u]; changed = true; }
-          }
-          if(Object.keys(map[ch]).length === 0) delete map[ch];
-        }
-        if(changed) writeTypingMap(map);
-        updateTypingUI();
-      }
-
-      // init
-      async function init(){
+      // Initialization
+      function init(){
         applyTheme();
         initializeAppearanceInputs();
+
         if(username){
           usernameBox.style.display = 'none';
           usernameLocked.style.display = 'flex';
           usernameDisplay.textContent = username;
-          await upsertLocalPlayer();
-          await setLocalPlayerOnlineState(true);
-          startHeartbeat();
         } else {
           usernameBox.style.display = 'flex';
           usernameLocked.style.display = 'none';
         }
-        await setActiveChannel(activeChannel);
-        await fetchPlayers();
-        if(playersPolling) clearInterval(playersPolling);
-        playersPolling = setInterval(fetchPlayers, 5000);
-        setInterval(cleanupTypingMap, 2000);
-        setStatus('Connected (client locked to this site)');
+
+        setActiveChannel(activeChannel);
+        updateCharCountAndState();
+
+        setStatus('Connected (polling every 4s)');
       }
+
       init();
 
-      // visibility/unload handlers: mark offline & clear typing
-      document.addEventListener('visibilitychange', async ()=>{
-        if(!username) return;
-        if(document.hidden){
-          try{
-            if(localPlayerId && navigator.sendBeacon){
-              const url = `${PLAYERS_API}/${localPlayerId}`;
-              const payload = JSON.stringify({ lastSeen: new Date().toISOString(), online:false, name: username, nameColor });
-              const blob = new Blob([payload], { type: 'application/json' });
-              navigator.sendBeacon(url, blob);
-            } else {
-              await setLocalPlayerOnlineState(false);
-            }
-          }catch(e){}
-          stopHeartbeat();
-        } else {
-          await upsertLocalPlayer();
-          startHeartbeat();
+      // Prevent navigation to other sites (basic client-side)
+      // Block anchor clicks
+      document.addEventListener('click', function(e){
+        const a = e.target.closest('a');
+        if(a){
+          e.preventDefault();
+          alert('Navigation blocked in this client.');
+        }
+      }, true);
+      // Override window.open
+      window.open = function(){ alert('Popup blocked in this client.'); return null; };
+
+      // Before unload handler - block closing unless allowUnload is true
+      function beforeUnloadHandler(e){
+        if(allowUnload) return;
+        // Standard message won't be shown in many browsers, but returning a value and calling preventDefault will trigger the confirmation dialog.
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+      window.addEventListener('beforeunload', beforeUnloadHandler);
+
+      // Only allow closing when user presses backslash "\" key.
+      // Pressing "\" will set allowUnload = true and then attempt to close window.
+      window.addEventListener('keydown', function(e){
+        // On many layouts, '|' is shift+backslash; we only allow backslash per request.
+        if(e.key === '\\'){
+          // allow close
+          allowUnload = true;
+          // Remove beforeunload handler to avoid further blocks
+          try{ window.removeEventListener('beforeunload', beforeUnloadHandler); }catch(err){}
+          // Attempt to close the window programmatically.
+          // Note: window.close() will only close windows opened by script in many browsers.
+          // To help the user, show a message and instruct them to close the tab if window.close() is blocked.
+          const closed = window.close && window.close();
+          // If window.close did not work, inform the user the page can now be closed.
+          setTimeout(()=> {
+            if(!closed) alert('Close enabled. You may now close the tab or window.');
+          }, 200);
         }
       });
 
-      window.addEventListener('beforeunload', ()=>{
+      // Also prevent changes via location.assign/replace from other scripts
+      if(window.location){
         try{
-          if(localPlayerId){
-            const url = `${PLAYERS_API}/${localPlayerId}`;
-            const payload = JSON.stringify({ lastSeen: new Date().toISOString(), online:false, name: username, nameColor });
-            if(navigator.sendBeacon){
-              const blob = new Blob([payload], { type: 'application/json' });
-              navigator.sendBeacon(url, blob);
-            } else {
-              fetch(url, { method:'PUT', headers:{'Content-Type':'application/json'}, body: payload }).catch(()=>{});
-            }
-          }
+          const origAssign = window.location.assign;
+          window.location.assign = function(){ alert('Navigation blocked in this client. Use \\ to enable closing.'); };
+          const origReplace = window.location.replace;
+          window.location.replace = function(){ alert('Navigation blocked in this client. Use \\ to enable closing.'); };
         }catch(e){}
-      });
+      }
 
-      // expose minimal debug
-      window._notcord = { muteMap, fetchMessages, fetchPlayers, startReply: (m)=>startReply(m) };
+      // Cleanup on unload - ensure polling cleared
+      window.addEventListener('unload', ()=> { if(polling) clearInterval(polling); });
 
     })();
   </script>
