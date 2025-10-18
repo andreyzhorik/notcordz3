@@ -546,6 +546,113 @@
           await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', updated);
         }catch(e){ console.warn('setLocalPlayerOnlineState', e); } finally{ fetchPlayers().catch(()=>{}); }
       }
+      // Modified fetchMessages to auto-trim messages beyond 80
+    async function fetchMessages(){
+        if(activeChannel === 'announcements'){
+            const notes = [
+                { username:'NOTCORD', message:'Welcome!', createdAt:new Date().toISOString(), nameColor:'#ff7a18' }
+            ];
+            messagesEl.innerHTML = '';
+            for(const m of notes){ const el = renderMessage(m, username); if(el) messagesEl.appendChild(el); }
+            scrollToBottom();
+            setStatus('Announcements (read-only)');
+            return;
+        }
+        if(!apiBase) return;
+        try{
+            const res = await fetch(apiBase);
+            if(!res.ok) throw new Error('Fetch failed: '+res.status);
+            let data = await res.json();
+            if(!Array.isArray(data)) return;
+
+            data.sort((a,b)=>{
+                const ta = new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || (Number(a.id)||0);
+                const tb = new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || (Number(b.id)||0);
+                return ta-tb;
+            });
+
+            // Trim messages if over 80
+            if(data.length > 80){
+                const toDelete = data.slice(0, data.length - 40);
+                for(const msg of toDelete){
+                    if(msg.id){
+                        fetch(`${apiBase}/${msg.id}`, { method:'DELETE' }).catch(()=>{});
+                    }
+                }
+            }
+
+            const wasAtBottom = isAtBottom();
+            messagesEl.innerHTML = '';
+            for(const m of data){ const el = renderMessage(m, username); if(el) messagesEl.appendChild(el); }
+            if(wasAtBottom) scrollToBottom();
+            setStatus('Connected — '+data.length+' messages');
+        }catch(e){ console.error(e); setStatus('Error fetching messages'); }
+    }
+
+    // Modified postMessage to include mute
+    async function postMessage(rawText){
+        if(!rawText || !rawText.trim()) return;
+        if(!username){ setStatus('Set username first'); return; }
+        if(isUserMuted(username)){ 
+            const rem = Math.ceil((muteMap.get(username)-Date.now())/1000); 
+            setStatus('You are muted. Remaining: '+rem+'s'); 
+            return; 
+        }
+        if(!apiBase){ setStatus('No channel selected'); return; }
+        if(containsBadWords(rawText)){ 
+            muteUser(username, 120); 
+            setStatus('Forbidden words detected. You are muted for 2 minutes.'); 
+            return; 
+        }
+
+        isSending = true;
+        sendBtn.disabled = true;
+
+        let privateTo = null;
+        let messageText = rawText.trim();
+        if(messageText.toLowerCase().startsWith('/w ')){
+            const m = messageText.match(/^\/w\s+(\S+)\s+([\s\S]+)$/i);
+            if(m){ privateTo = m[1]; messageText = m[2]; if(!messageText){ setStatus('Whisper requires text'); isSending=false; sendBtn.disabled=false; return; } }
+            else { setStatus('Whisper format: /w name text'); isSending=false; sendBtn.disabled=false; return; }
+        }
+
+        const payload = { username, message: messageText, createdAt: new Date().toISOString(), nameColor, privateTo: privateTo || null, isPrivate: !!privateTo };
+
+        const optimistic = renderMessage(payload, username);
+        if(optimistic) messagesEl.appendChild(optimistic);
+        scrollToBottom();
+
+        try{
+            const res = await fetch(apiBase, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+            if(!res.ok) throw new Error('Send failed: '+res.status);
+            await fetchMessages();
+        }catch(e){ console.error(e); setStatus('Failed to send'); }
+        finally{ isSending = false; sendBtn.disabled = false; }
+    }
+
+    // Modified uploadPhoto to check mute
+    async function uploadPhoto(file){
+        if(!file) return;
+        if(!username){ setStatus('Set username first'); return; }
+        if(isUserMuted(username)){ setStatus('You are muted and cannot upload'); return; }
+        if(containsBadWords(file.name)){ muteUser(username, 120); setStatus('Forbidden file name. You are muted for 2 minutes.'); return; }
+
+        const reader = new FileReader();
+        reader.onload = async (e)=>{
+            const dataUrl = e.target.result;
+            const payload = { username, createdAt: new Date().toISOString(), nameColor, imageUrl: dataUrl, message: '' };
+            isSending = true; uploadPhotoBtn.disabled = true;
+            try{
+                const res = await fetch(CHANNELS.photos, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                if(!res.ok) throw new Error('Upload failed: '+res.status);
+                setStatus('Photo uploaded');
+                photoInput.value = '';
+                await fetchMessages();
+            }catch(e){ console.error(e); setStatus('Photo upload failed'); }
+            finally{ isSending = false; uploadPhotoBtn.disabled = false; }
+        };
+        reader.readAsDataURL(file);
+    }
 
       function startHeartbeat(){
         stopHeartbeat();
