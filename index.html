@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>notcord — multi-channel (fixed colors)</title>
+  <title>notcord — multi-channel (updated)</title>
   <style>
     :root{
       --theme-1: #071226;
@@ -14,20 +14,22 @@
       --me-bg: #2b3440;
       --border: rgba(255,255,255,0.06);
       --text: #e6eef6;
+      --idle-yellow: #f0c419;
     }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Helvetica,Arial;color:var(--text);
       background:linear-gradient(180deg,var(--theme-1) 0%, var(--theme-2) 100%);
     }
-    .app { width:100%; height:100vh; display:grid; grid-template-columns:260px 1fr 260px; overflow:hidden; }
+    .app { width:100%; height:100vh; display:grid; grid-template-columns:260px 1fr 260px; overflow:hidden; gap:0 }
     .sidebar{ padding:14px; display:flex; flex-direction:column; gap:12px; height:100vh; overflow:auto; background:linear-gradient(180deg,var(--theme-1),var(--theme-2)); border-right:1px solid var(--border) }
     .brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:18px}
-    .brand .dot{width:18px;height:18px;border-radius:50%;background:var(--theme-3);box-shadow:0 6px 20px rgba(11,34,51,0.35)}
+    .brand .dot{width:18px;height:18px;border-radius:50%;background:var(--theme-2);box-shadow:0 6px 20px rgba(11,34,51,0.35)}
     .brand .name{color:var(--theme-3);font-weight:800;font-size:18px}
     .usernameBox{display:flex;gap:8px;align-items:center}
     .usernameBox input{flex:1;padding:8px;background:transparent;border:1px solid var(--border);border-radius:8px;color:inherit;outline:none}
     .usernameBox button{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
     .usernameLocked{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border);font-weight:600;overflow:hidden}
+    .usernameLocked .avatar{width:28px;height:28px;border-radius:6px;object-fit:cover;background:rgba(255,255,255,0.03)}
     .channels{margin-top:6px;display:flex;flex-direction:column;gap:6px}
     .channel{padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer;border:1px solid transparent;display:flex;justify-content:space-between;align-items:center}
     .channel:hover{background:rgba(255,255,255,0.01)}
@@ -39,54 +41,50 @@
     .chatPanel{display:flex;flex-direction:column;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);position:relative;min-height:0}
     .chatBox{display:flex;flex-direction:column;height:100%;min-height:0}
     .header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:transparent}
-    .header h2{margin:0;font-size:18px}
-    .header .spacer{flex:1}
-    .header .right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+    .header h2{margin:0;font-size:18px;display:flex;gap:8px;align-items:center}
+    .spacer{flex:1}
+    .right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
     .status{color:var(--muted);font-size:13px}
     .typing{color:var(--muted);font-size:12px;height:18px}
     .messages{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;min-height:0;background:transparent}
     .message{display:flex;gap:12px;align-items:flex-start;max-width:85%}
     .message.me{margin-left:auto;justify-content:flex-end}
-    /* Use theme-3 for all chat bubbles (both others and me). For me, keep slight accent border. */
+    .authorAvatar{width:36px;height:36px;border-radius:8px;object-fit:cover;background:rgba(255,255,255,0.02);flex-shrink:0}
     .bubble{
       background:var(--theme-3);
       color:var(--text);
       padding:10px 12px;border-radius:12px;display:flex;flex-direction:column;gap:6px;word-break:break-word;
       border-left:4px solid rgba(0,0,0,0.08);
       box-shadow:0 6px 18px rgba(2,6,23,0.6);
-      max-width:480px;
+      max-width:520px;
     }
     .message.me .bubble{
-      /* still theme-3 as requested; differentiate with border and slight lift */
       background:var(--theme-3);
       border-left-color: var(--accent);
       transform: translateY(0);
     }
     .replyBtn {
-  margin-left: 8px;
-  font-size: 12px;
-  color: var(--muted);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-.replyBtn:hover {
-  text-decoration: underline;
-}
-
-.replyTag {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 4px;
-}
-
+      margin-left: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .replyBtn:hover { text-decoration: underline; }
+    .replyTag {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      padding-left:6px;
+      border-left:2px solid rgba(255,255,255,0.03);
+    }
     .meta{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
     .meta .name{font-weight:700}
     .meta .time{font-size:12px;color:var(--muted)}
     .text{white-space:pre-wrap;color:inherit;font-size:15px;word-break:break-word;overflow-wrap:break-word}
     .privateTag{font-size:12px;color:#ffd980;margin-left:8px}
-    .photoMessage img { max-width: 420px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor:pointer; transition:transform .15s }
+    .photoMessage img { max-width: 420px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor:pointer; transition:transform .15s; display:block; max-height:480px; width:auto }
     .photoMessage img:hover{ transform: scale(1.03) }
     .inputArea{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
     .inputArea textarea{flex:1;min-height:44px;max-height:160px;resize:none;padding:10px;border-radius:10px;background:transparent;border:1px solid var(--border);color:inherit;outline:none}
@@ -105,7 +103,9 @@
     .player .statusDot{width:10px;height:10px;border-radius:50%;margin-right:8px;flex-shrink:0}
     .player.online .statusDot{background:#39d353;box-shadow:0 0 8px rgba(57,211,83,0.12)}
     .player.offline .statusDot{background:#a0a0a0}
-    .player .playerName{font-weight:600}
+    .pinnedSection{padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid var(--border);font-size:13px}
+    .pinnedItem{padding:6px;border-radius:6px;background:rgba(255,255,255,0.01);display:flex;gap:8px;align-items:center}
+    .idleDot{width:10px;height:10px;border-radius:50%;background:var(--idle-yellow);box-shadow:0 0 8px rgba(240,196,25,0.12)}
     @media (max-width:980px){ .app{grid-template-columns:200px 1fr 140px} }
     @media (max-width:720px){ .app{grid-template-columns:1fr} .sidebar,.playersPanel{display:none} }
   </style>
@@ -117,19 +117,35 @@
 
       <div id="usernameSection">
         <div class="usernameBox" id="usernameBox">
-          <input type="text" id="usernameInput" placeholder="Choose username (once)" maxlength="40" />
+          <input type="text" id="usernameInput" placeholder="Choose username (max 8 chars)" maxlength="8" />
           <button id="setNameBtn">Set</button>
         </div>
         <div class="usernameLocked" id="usernameLocked" style="display:none">
+          <img src="" id="userAvatarSmall" class="avatar" alt="avatar" />
           <div id="usernameDisplay"></div>
         </div>
+
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+          <label style="font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px">Change avatar (weekly)
+            <input type="file" id="avatarInput" accept="image/*" />
+          </label>
+          <button id="changeNameBtn" class="toggleBtn" title="Change name (weekly)" style="padding:8px 10px">Change Name</button>
+        </div>
+        <div id="nameChangeInfo" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
       </div>
 
       <div class="channels" id="channels">
         <div class="channel active" data-id="general" role="button"># general</div>
-        <div class="channel" data-id="general-2" role="button"># general 2</div>
         <div class="channel" data-id="photos" role="button"># photos</div>
-        <div class="channel" data-id="announcements" role="button"># announcements <span class="lock">🔒</span></div>
+        <!-- # announcements and # general 2 removed as requested -->
+      </div>
+
+      <div class="pinnedSection" id="pinnedSection" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Pinned</div>
+          <div style="font-size:12px;color:var(--muted)"><button id="clearPins" class="toggleBtn" style="padding:4px 6px">Clear</button></div>
+        </div>
+        <div id="pinnedList" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
       </div>
 
       <div class="settings" aria-label="Appearance settings">
@@ -166,7 +182,7 @@
         </label>
 
         <div style="font-size:12px;color:var(--muted);padding-top:6px">
-          Username and appearance are saved in this browser.<br/>Use "/w name text" to send a private message.
+          Username, avatar and appearance saved in browser.<br/>Use "/w name text" to send a private message. Mention with @name to ping.
         </div>
       </div>
     </aside>
@@ -193,8 +209,8 @@
         </div>
 
         <div class="photoUploadArea" id="photoUploadWrapper" style="display:none">
-          <input type="file" id="photoInput" accept="image/*" />
-          <button id="uploadPhotoBtn" disabled>Upload Photo</button>
+          <input type="file" id="photoInput" accept="image/*,image/gif" />
+          <button id="uploadPhotoBtn" disabled>Upload Photo / GIF</button>
         </div>
       </div>
     </section>
@@ -209,19 +225,15 @@
 
   <script>
     (function(){
-      // Channel endpoints
+      /***** Config & endpoints *****/
       const CHANNELS = {
         general: 'https://68e839b2f2707e6128ca35e1.mockapi.io/chat',
-        'general-2': 'https://68eeed86b06cc802829ba196.mockapi.io/chat2',
-        photos: 'https://68eeed86b06cc802829ba196.mockapi.io/photos',
-        announcements: null
+        photos: 'https://68eeed86b06cc802829ba196.mockapi.io/photos'
       };
       const PLAYERS_API = 'https://68e839b2f2707e6128ca35e1.mockapi.io/players';
-
-      // minimal bad words examples
       const BAD_WORDS = ['fuck','bitch','nigger','tun tun tun sahur','нахуй','гей','gay','хуета'];
 
-      // UI refs
+      /***** UI refs *****/
       const channelsEl = document.getElementById('channels');
       const channelTitleEl = document.getElementById('channelTitle');
       const messagesEl = document.getElementById('messages');
@@ -240,6 +252,10 @@
       const setNameBtn = document.getElementById('setNameBtn');
       const usernameLocked = document.getElementById('usernameLocked');
       const usernameDisplay = document.getElementById('usernameDisplay');
+      const userAvatarSmall = document.getElementById('userAvatarSmall');
+      const avatarInput = document.getElementById('avatarInput');
+      const changeNameBtn = document.getElementById('changeNameBtn');
+      const nameChangeInfo = document.getElementById('nameChangeInfo');
 
       const nameColorInput = document.getElementById('nameColor');
       const themeColor1Input = document.getElementById('themeColor1');
@@ -253,7 +269,11 @@
       const playersListEl = document.getElementById('playersList');
       const playersStatusEl = document.getElementById('playersStatus');
 
-      // state
+      const pinnedSection = document.getElementById('pinnedSection');
+      const pinnedList = document.getElementById('pinnedList');
+      const clearPinsBtn = document.getElementById('clearPins');
+
+      /***** State *****/
       let activeChannel = localStorage.getItem('notcord_channel') || 'general';
       let apiBase = CHANNELS[activeChannel] || null;
       let polling = null;
@@ -274,32 +294,40 @@
       let themeColor3 = localStorage.getItem('notcord_theme3') || '#0b2233';
       let accentColor = localStorage.getItem('notcord_accent') || themeColor1;
       let localPlayerId = localStorage.getItem('notcord_playerId') || null;
+      let avatarDataUrl = localStorage.getItem('notcord_avatar') || ''; // small base64 url
+      let pinnedMessages = JSON.parse(localStorage.getItem('notcord_pins') || '[]');
 
-      // mute map
-      const muteMap = new Map();
+      // name/avatar change restrictions (weekly)
+      const NAME_CHANGE_KEY = 'notcord_name_change_ts';
+      const AVATAR_CHANGE_KEY = 'notcord_avatar_change_ts';
+      const NAME_MAX_LENGTH = 8;
+      const WEEK_MS = 7*24*60*60*1000;
 
+      /***** Utils *****/
       function setStatus(txt){ statusEl.textContent = txt; }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
       function formatTime(iso){ try{ const d=new Date(iso); if(isNaN(d)) return ''; return d.toLocaleString([], {hour:'2-digit', minute:'2-digit'}); }catch(e){return ''} }
+      function now(){ return Date.now(); }
 
-      function applyTheme(){ document.documentElement.style.setProperty('--theme-1', themeColor1); document.documentElement.style.setProperty('--theme-2', themeColor2); document.documentElement.style.setProperty('--theme-3', themeColor3); document.documentElement.style.setProperty('--accent', accentColor || themeColor1); }
+      /***** Theme & appearance *****/
+      function applyTheme(){ document.documentElement.style.setProperty('--theme-1', themeColor1); document.documentElement.style.setProperty('--theme-2', themeColor2); document.documentElement.style.setProperty('--theme-3', themeColor3); document.documentElement.style.setProperty('--accent', accentColor || themeColor1); /* brand dot is using theme-2 by CSS already */ }
       function initializeAppearanceInputs(){ nameColorInput.value = nameColor; themeColor1Input.value = themeColor1; themeColor2Input.value = themeColor2; themeColor3Input.value = themeColor3; }
 
-      // Typing indicator (localStorage)
+      /***** Typing indicator (localStorage) *****/
       function readTypingMap(){ try{ return JSON.parse(localStorage.getItem(TYPING_KEY)||'{}'); }catch(e){ return {}; } }
       function writeTypingMap(m){ try{ localStorage.setItem(TYPING_KEY, JSON.stringify(m)); }catch(e){} }
       function updateTypingUI(){
         const map = readTypingMap();
         const channelMap = map[activeChannel] || {};
-        const now = Date.now();
-        const typers = Object.keys(channelMap).filter(u => u !== username && (now - channelMap[u]) <= TYPING_EXPIRE_MS);
+        const nowTs = now();
+        const typers = Object.keys(channelMap).filter(u => u !== username && (nowTs - channelMap[u]) <= TYPING_EXPIRE_MS);
         if(!typers.length) typingIndicatorEl.textContent = '';
         else if(typers.length === 1) typingIndicatorEl.textContent = typers[0] + ' is typing...';
         else typingIndicatorEl.textContent = typers[0] + ' and ' + (typers.length-1) + ' others are typing...';
       }
       window.addEventListener('storage', (e)=> { if(e.key === TYPING_KEY) updateTypingUI(); });
 
-      // helpers
+      /***** Helpers *****/
       function isUserMuted(user){
         const t = muteMap.get(user);
         if(!t) return false;
@@ -314,27 +342,61 @@
         return BAD_WORDS.some(w => w && lower.includes(w));
       }
 
-      // render message (uses theme-3 for bubbles) and respects imageUrl for photos
+      /***** Message rendering (with avatar, reply, pinned marker, highlight mentions) *****/
       function renderMessage(msg, localUser){
+        // handle private
         if(msg.privateTo && !(msg.privateTo === localUser || msg.username === localUser)) return null;
+
         const container = document.createElement('div');
         const author = msg.username || msg.name || 'Unknown';
         const isMe = author === localUser;
         container.className = 'message' + (isMe ? ' me' : '');
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble';
 
+        const avatarImg = document.createElement('img');
+        avatarImg.className = 'authorAvatar';
+        avatarImg.alt = author + ' avatar';
+        // choose avatar priority: msg.avatar -> local storage mapping -> default
+        if(msg.avatar) avatarImg.src = msg.avatar;
+        else if(author === username && avatarDataUrl) avatarImg.src = avatarDataUrl;
+        else avatarImg.src = ''; // will appear as background
+
+        const bubble = document.createElement('div'); bubble.className = 'bubble';
+
+        // meta row
         const meta = document.createElement('div'); meta.className = 'meta';
         const nameEl = document.createElement('span'); nameEl.className = 'name'; nameEl.textContent = author;
-        // apply name color from message if present (server-side stored), otherwise apply local user's nameColor for own messages
         if(msg.nameColor) nameEl.style.color = msg.nameColor;
         else if(isMe && nameColor) nameEl.style.color = nameColor;
-
         const timeEl = document.createElement('span'); timeEl.className = 'time'; timeEl.textContent = formatTime(msg.createdAt || msg.created_at || msg.timestamp || msg.time || '');
+
         meta.appendChild(nameEl);
         meta.appendChild(timeEl);
+
+        // reply button for messages not mine and not private
+        if (!isMe && !msg.privateTo) {
+          const replyBtn = document.createElement('button');
+          replyBtn.className = 'replyBtn';
+          replyBtn.textContent = 'Reply';
+          replyBtn.onclick = (e) => { e.stopPropagation(); setReplyTo(msg); };
+          meta.appendChild(replyBtn);
+        }
+
         bubble.appendChild(meta);
 
+        // show quoted reply preview (if msg.replyToObj present or replyTo text)
+        if(msg.replyToObj){
+          const r = document.createElement('div');
+          r.className = 'replyTag';
+          r.textContent = `${msg.replyToObj.username || msg.replyToObj.name || 'Unknown'}: ${truncateText(msg.replyToObj.message || msg.replyToObj.text || msg.replyToObj.content || '', 140)}`;
+          bubble.appendChild(r);
+        } else if(msg.replyTo){
+          const r = document.createElement('div');
+          r.className = 'replyTag';
+          r.textContent = `Replying to ${msg.replyTo}`;
+          bubble.appendChild(r);
+        }
+
+        // content (image or text)
         if(msg.imageUrl){
           const photoDiv = document.createElement('div'); photoDiv.className = 'photoMessage';
           const img = document.createElement('img'); img.src = msg.imageUrl; img.alt = msg.message || 'photo';
@@ -346,42 +408,107 @@
           }
           bubble.appendChild(photoDiv);
         } else {
-          const text = document.createElement('div'); text.className = 'text'; text.textContent = msg.message || msg.text || msg.content || '';
+          const text = document.createElement('div'); text.className = 'text';
+          const content = msg.message || msg.text || msg.content || '';
+          // highlight mentions of current user
+          if(username && content.includes('@'+username)){
+            const parts = content.split(new RegExp('(@'+username+')','g'));
+            parts.forEach(p=>{
+              if(p === '@'+username){
+                const span = document.createElement('span');
+                span.textContent = p;
+                span.style.background = 'rgba(240,196,25,0.12)';
+                span.style.color = 'var(--idle-yellow)';
+                span.style.padding = '2px 4px';
+                span.style.borderRadius = '4px';
+                text.appendChild(span);
+              } else {
+                text.appendChild(document.createTextNode(p));
+              }
+            });
+          } else {
+            text.textContent = content;
+          }
           bubble.appendChild(text);
         }
 
-        container.appendChild(bubble);
+        // pinned marker
+        if(isMessagePinned(msg)){
+          const p = document.createElement('div');
+          p.style.fontSize = '12px'; p.style.color = 'var(--muted)'; p.textContent = '📌 Pinned';
+          bubble.appendChild(p);
+        }
+
+        // container layout: avatar + bubble
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.gap = '12px';
+        if(container.className.includes('me')){
+          // for own messages put bubble then avatar
+          wrapper.appendChild(bubble);
+          wrapper.appendChild(avatarImg);
+        } else {
+          wrapper.appendChild(avatarImg);
+          wrapper.appendChild(bubble);
+        }
+        container.appendChild(wrapper);
+
+        // clicking on mention plays simple visual ping (here: brief flash)
+        if(username && (msg.message||'').includes('@'+username)){
+          container.style.boxShadow = '0 0 0 rgba(88,101,242,0.0)';
+          setTimeout(()=> container.style.boxShadow = '', 2500);
+          // also update status text briefly
+          setStatus('You were mentioned by '+author);
+        }
+
+        // attach message id for later reply lookup
+        container.dataset.msgId = msg.id || '';
+
         return container;
       }
+
+      function truncateText(s, n){ if(!s) return ''; return s.length>n ? s.slice(0,n-1)+'…' : s; }
 
       function isAtBottom(){ return messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 80; }
       function scrollToBottom(){ requestAnimationFrame(()=> messagesEl.scrollTop = messagesEl.scrollHeight); }
 
+      /***** Fetch & post messages (with trimming & reply attachments) *****/
       async function fetchMessages(){
-        if(activeChannel === 'announcements'){
-          const notes = [
-            { username:'NOTCORD', message:'Welcome!', createdAt:new Date().toISOString(), nameColor:'#ff7a18' }
-          ];
-          messagesEl.innerHTML = '';
-          for(const m of notes){ const el = renderMessage(m, username); if(el) messagesEl.appendChild(el); }
-          scrollToBottom();
-          setStatus('Announcements (read-only)');
-          return;
-        }
         if(!apiBase) return;
         try{
           const res = await fetch(apiBase);
           if(!res.ok) throw new Error('Fetch failed: '+res.status);
-          const data = await res.json();
+          let data = await res.json();
           if(!Array.isArray(data)) return;
+
           data.sort((a,b)=> {
             const ta = new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || (Number(a.id)||0);
             const tb = new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || (Number(b.id)||0);
             return ta-tb;
           });
+
+          // Trim messages if over 80 (delete older ones)
+          if(data.length > 80){
+            const toDelete = data.slice(0, data.length - 40);
+            for(const msg of toDelete){
+              if(msg.id){
+                fetch(`${apiBase}/${msg.id}`, { method:'DELETE' }).catch(()=>{});
+              }
+            }
+          }
+
+          // build lookup for replies: some messages may contain replyToId
+          const lookup = {};
+          for(const m of data) lookup[m.id] = m;
+
           const wasAtBottom = isAtBottom();
           messagesEl.innerHTML = '';
-          for(const m of data){ const el = renderMessage(m, username); if(el) messagesEl.appendChild(el); }
+          for(const m of data){
+            // if message references replyToId, attach replyToObj for preview
+            if(m.replyToId && lookup[m.replyToId]) m.replyToObj = { username: lookup[m.replyToId].username || lookup[m.replyToId].name, message: lookup[m.replyToId].message || lookup[m.replyToId].text };
+            const el = renderMessage(m, username);
+            if(el) messagesEl.appendChild(el);
+          }
           if(wasAtBottom) scrollToBottom();
           setStatus('Connected — '+data.length+' messages');
         }catch(e){ console.error(e); setStatus('Error fetching messages'); }
@@ -398,7 +525,7 @@
         }catch(e){ console.warn('safeFetch', e); return null; }
       }
 
-      // post message with basic anti-cheat & recording
+      // optimistic post with mention detection & reply linking
       async function postMessage(rawText){
         if(!rawText || !rawText.trim()) return;
         if(!username){ setStatus('Set username first'); return; }
@@ -417,7 +544,13 @@
           else { setStatus('Whisper format: /w name text'); isSending=false; sendBtn.disabled=false; return; }
         }
 
+        // detect mentions for simple ping UX (server notifies not implemented, local UI only)
+        const mentions = (messageText.match(/@\w+/g) || []).map(m=>m.slice(1));
+
         const payload = { username, message: messageText, createdAt: new Date().toISOString(), nameColor, privateTo: privateTo || null, isPrivate: !!privateTo };
+
+        // include replyToId if a reply target exists
+        if(replyToMessage && replyToMessage.id) payload.replyToId = replyToMessage.id;
 
         const optimistic = renderMessage(payload, username);
         if(optimistic) messagesEl.appendChild(optimistic);
@@ -431,30 +564,65 @@
         finally{ isSending = false; sendBtn.disabled = false; }
       }
 
+      /***** Image resizing & GIF handling for upload *****/
+      function isGif(file){ return file.type === 'image/gif' || /\.gif$/i.test(file.name); }
+      async function fileToDataUrl(file){
+        return new Promise((res, rej)=>{
+          const r = new FileReader();
+          r.onload = ()=> res(r.result);
+          r.onerror = rej;
+          r.readAsDataURL(file);
+        });
+      }
+      async function resizeImageFileIfNeeded(file, maxWidth=420, maxHeight=480){
+        if(isGif(file)) {
+          // return as-is for GIFs (we allow GIFs). But large GIFs may be huge - user will upload as-is.
+          return fileToDataUrl(file);
+        }
+        const url = await fileToDataUrl(file);
+        const img = new Image();
+        return new Promise((resolve, reject)=>{
+          img.onload = ()=>{
+            let { width, height } = img;
+            if(width <= maxWidth && height <= maxHeight){
+              resolve(url); // no resize needed
+              return;
+            }
+            const ratio = Math.min(maxWidth/width, maxHeight/height);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(width*ratio);
+            canvas.height = Math.round(height*ratio);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const resized = canvas.toDataURL('image/jpeg', 0.85);
+            resolve(resized);
+          };
+          img.onerror = reject;
+          img.src = url;
+        });
+      }
+
       async function uploadPhoto(file){
         if(!file) return;
         if(!username){ setStatus('Set username first'); return; }
         if(isUserMuted(username)){ setStatus('You are muted and cannot upload'); return; }
         if(containsBadWords(file.name)){ muteUser(username, 120); setStatus('Forbidden file name. You are muted for 2 minutes.'); return; }
 
-        const reader = new FileReader();
-        reader.onload = async (e)=>{
-          const dataUrl = e.target.result;
+        isSending = true;
+        uploadPhotoBtn.disabled = true;
+        try{
+          const dataUrl = await resizeImageFileIfNeeded(file); // handles GIFs & resize
           const payload = { username, createdAt: new Date().toISOString(), nameColor, imageUrl: dataUrl, message: '' };
-          isSending = true; uploadPhotoBtn.disabled = true;
-          try{
-            const res = await fetch(CHANNELS.photos, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-            if(!res.ok) throw new Error('Upload failed: '+res.status);
-            setStatus('Photo uploaded');
-            photoInput.value = '';
-            await fetchMessages();
-          }catch(e){ console.error(e); setStatus('Photo upload failed'); }
-          finally{ isSending = false; uploadPhotoBtn.disabled = false; }
-        };
-        reader.readAsDataURL(file);
+          const res = await fetch(CHANNELS.photos, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          if(!res.ok) throw new Error('Upload failed: '+res.status);
+          setStatus('Photo uploaded');
+          photoInput.value = '';
+          await fetchMessages();
+        }catch(e){ console.error(e); setStatus('Photo upload failed'); }
+        finally{ isSending = false; uploadPhotoBtn.disabled = false; }
       }
 
-      // players (leaderboard) - ensure names get their colors if provided by server; otherwise use local color for current user
+      /***** Players / online detection (idle yellow dot when user computer on but not on site) *****/
       function normalizePlayerName(p){ return p.name || p.username || p.nick || p.displayName || (p.id?String(p.id):String(p)); }
       function detectPlayerOnline(p){ try{ if(p.lastSeen){ const last = Date.parse(p.lastSeen); if(!isNaN(last) && (Date.now() - last) <= PLAYER_OFFLINE_THRESHOLD_MS) return true; } }catch(e){} return false; }
 
@@ -487,7 +655,6 @@
             const dot = document.createElement('span'); dot.className='statusDot';
             const nameSpan = document.createElement('div'); nameSpan.className='playerName';
             nameSpan.innerHTML = escapeHtml(p.name) + (p.local ? ' <span style="font-size:12px;color:var(--muted)">(you)</span>' : '');
-            // apply color priority: server-provided nameColor -> player.raw.nameColor or player.raw.color; if not, if local then use local nameColor
             const serverColor = (p.raw && (p.raw.nameColor || p.raw.color)) ? (p.raw.nameColor || p.raw.color) : null;
             if(serverColor) nameSpan.style.color = serverColor;
             else if(p.local && nameColor) nameSpan.style.color = nameColor;
@@ -525,13 +692,13 @@
           const data = await res.json();
           if(!Array.isArray(data)) return;
           const found = data.find(p => normalizePlayerName(p) === username);
-          const now = new Date().toISOString();
+          const nowTs = new Date().toISOString();
           if(found){
             localPlayerId = found.id;
             localStorage.setItem('notcord_playerId', localPlayerId);
-            await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', {...found, name: username, lastSeen: now, nameColor});
+            await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', {...found, name: username, lastSeen: nowTs, nameColor, avatar: avatarDataUrl});
           } else {
-            const created = await safeFetch(PLAYERS_API, 'POST', { name: username, lastSeen: now, nameColor });
+            const created = await safeFetch(PLAYERS_API, 'POST', { name: username, lastSeen: nowTs, nameColor, avatar: avatarDataUrl });
             if(created && created.id){ localPlayerId = created.id; localStorage.setItem('notcord_playerId', localPlayerId); }
           }
         }catch(e){ console.warn('upsertLocalPlayer', e); } finally{ fetchPlayers().catch(()=>{}); }
@@ -542,132 +709,29 @@
         try{
           const cur = await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'GET', null);
           if(!cur) return;
-          const updated = { ...cur, online: !!isOnline, lastSeen: new Date().toISOString(), name: username || cur.name, nameColor: nameColor || cur.nameColor };
+          const updated = { ...cur, online: !!isOnline, lastSeen: new Date().toISOString(), name: username || cur.name, nameColor: nameColor || cur.nameColor, avatar: avatarDataUrl || cur.avatar };
           await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', updated);
         }catch(e){ console.warn('setLocalPlayerOnlineState', e); } finally{ fetchPlayers().catch(()=>{}); }
       }
-      // Modified fetchMessages to auto-trim messages beyond 80
-    async function fetchMessages(){
-        if(activeChannel === 'announcements'){
-            const notes = [
-                { username:'NOTCORD', message:'Welcome!', createdAt:new Date().toISOString(), nameColor:'#ff7a18' }
-            ];
-            messagesEl.innerHTML = '';
-            for(const m of notes){ const el = renderMessage(m, username); if(el) messagesEl.appendChild(el); }
-            scrollToBottom();
-            setStatus('Announcements (read-only)');
-            return;
-        }
-        if(!apiBase) return;
-        try{
-            const res = await fetch(apiBase);
-            if(!res.ok) throw new Error('Fetch failed: '+res.status);
-            let data = await res.json();
-            if(!Array.isArray(data)) return;
 
-            data.sort((a,b)=>{
-                const ta = new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || (Number(a.id)||0);
-                const tb = new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || (Number(b.id)||0);
-                return ta-tb;
-            });
+      /***** Message trimming already included in fetchMessages (keeps it summarized) *****/
 
-            // Trim messages if over 80
-            if(data.length > 80){
-                const toDelete = data.slice(0, data.length - 40);
-                for(const msg of toDelete){
-                    if(msg.id){
-                        fetch(`${apiBase}/${msg.id}`, { method:'DELETE' }).catch(()=>{});
-                    }
-                }
-            }
-
-            const wasAtBottom = isAtBottom();
-            messagesEl.innerHTML = '';
-            for(const m of data){ const el = renderMessage(m, username); if(el) messagesEl.appendChild(el); }
-            if(wasAtBottom) scrollToBottom();
-            setStatus('Connected — '+data.length+' messages');
-        }catch(e){ console.error(e); setStatus('Error fetching messages'); }
-    }
-
-    // Modified postMessage to include mute
-    async function postMessage(rawText){
-        if(!rawText || !rawText.trim()) return;
-        if(!username){ setStatus('Set username first'); return; }
-        if(isUserMuted(username)){ 
-            const rem = Math.ceil((muteMap.get(username)-Date.now())/1000); 
-            setStatus('You are muted. Remaining: '+rem+'s'); 
-            return; 
-        }
-        if(!apiBase){ setStatus('No channel selected'); return; }
-        if(containsBadWords(rawText)){ 
-            muteUser(username, 120); 
-            setStatus('Forbidden words detected. You are muted for 2 minutes.'); 
-            return; 
-        }
-
-        isSending = true;
-        sendBtn.disabled = true;
-
-        let privateTo = null;
-        let messageText = rawText.trim();
-        if(messageText.toLowerCase().startsWith('/w ')){
-            const m = messageText.match(/^\/w\s+(\S+)\s+([\s\S]+)$/i);
-            if(m){ privateTo = m[1]; messageText = m[2]; if(!messageText){ setStatus('Whisper requires text'); isSending=false; sendBtn.disabled=false; return; } }
-            else { setStatus('Whisper format: /w name text'); isSending=false; sendBtn.disabled=false; return; }
-        }
-
-        const payload = { username, message: messageText, createdAt: new Date().toISOString(), nameColor, privateTo: privateTo || null, isPrivate: !!privateTo };
-
-        const optimistic = renderMessage(payload, username);
-        if(optimistic) messagesEl.appendChild(optimistic);
-        scrollToBottom();
-
-        try{
-            const res = await fetch(apiBase, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-            if(!res.ok) throw new Error('Send failed: '+res.status);
-            await fetchMessages();
-        }catch(e){ console.error(e); setStatus('Failed to send'); }
-        finally{ isSending = false; sendBtn.disabled = false; }
-    }
-
-    // Modified uploadPhoto to check mute
-    async function uploadPhoto(file){
-        if(!file) return;
-        if(!username){ setStatus('Set username first'); return; }
-        if(isUserMuted(username)){ setStatus('You are muted and cannot upload'); return; }
-        if(containsBadWords(file.name)){ muteUser(username, 120); setStatus('Forbidden file name. You are muted for 2 minutes.'); return; }
-
-        const reader = new FileReader();
-        reader.onload = async (e)=>{
-            const dataUrl = e.target.result;
-            const payload = { username, createdAt: new Date().toISOString(), nameColor, imageUrl: dataUrl, message: '' };
-            isSending = true; uploadPhotoBtn.disabled = true;
-            try{
-                const res = await fetch(CHANNELS.photos, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-                if(!res.ok) throw new Error('Upload failed: '+res.status);
-                setStatus('Photo uploaded');
-                photoInput.value = '';
-                await fetchMessages();
-            }catch(e){ console.error(e); setStatus('Photo upload failed'); }
-            finally{ isSending = false; uploadPhotoBtn.disabled = false; }
-        };
-        reader.readAsDataURL(file);
-    }
-
+      /***** Heartbeat *****/
       function startHeartbeat(){
         stopHeartbeat();
         if(!username || !localPlayerId) return;
         heartbeatInterval = setInterval(async ()=>{
-          try{ await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { lastSeen: new Date().toISOString(), online:true, name: username, nameColor }); }catch(e){ console.warn('heartbeat', e); }
+          try{ await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { lastSeen: new Date().toISOString(), online:true, name: username, nameColor, avatar: avatarDataUrl }); }catch(e){ console.warn('heartbeat', e); }
         }, HEARTBEAT_MS);
       }
       function stopHeartbeat(){ if(heartbeatInterval){ clearInterval(heartbeatInterval); heartbeatInterval = null; } }
 
+      /***** Input & character state *****/
       function updateCharCountAndState(){
         let val = messageInput.value || '';
         if(val.length > MAX_CHARS) messageInput.value = val.slice(0, MAX_CHARS);
         charCountEl.textContent = `${(messageInput.value||'').length} / ${MAX_CHARS}`;
-        const canSend = username && (messageInput.value||'').trim().length > 0 && activeChannel !== 'announcements' && activeChannel !== 'photos' && !isSending && !isUserMuted(username);
+        const canSend = username && (messageInput.value||'').trim().length > 0 && activeChannel !== 'photos' && !isSending && !isUserMuted(username);
         sendBtn.disabled = !canSend;
       }
 
@@ -680,42 +744,68 @@
           photoUploadWrapper.style.display = 'none';
           inputWrapper.style.display = 'flex';
         }
-        if(activeChannel === 'announcements'){
-          messageInput.disabled = true; sendBtn.disabled = true; charCountEl.style.opacity = 0.5;
-        } else { messageInput.disabled = false; charCountEl.style.opacity = 1; }
       }
-       // Add beforeunload event to prevent closing unless backslash is pressed
-    let backslashPressed = false;
-    
-    window.addEventListener('keydown', (e) => {
-      if (e.key === '\\') {
-        backslashPressed = true;
-      }
-    });
-    
-    window.addEventListener('beforeunload', (e) => {
-      if (!backslashPressed) {
-        e.preventDefault();
-        e.returnValue = '';
-        return '';
-      }
-    });
-      
-      // Add reply functionality
-    let replyToMessage = null;
-    
-    function setReplyTo(message) {
-      replyToMessage = message;
-      messageInput.placeholder = `Replying to ${message.username || 'Unknown'}...`;
-      messageInput.focus();
-    }
-    
-    function clearReplyTo() {
-      replyToMessage = null;
-      messageInput.placeholder = 'Message (Shift+Enter for newline)';
-    }
 
-      // event wiring
+      /***** Prevent accidental close (keeps earlier behavior) *****/
+      let backslashPressed = false;
+      window.addEventListener('keydown', (e) => { if (e.key === '\\') backslashPressed = true; });
+      window.addEventListener('beforeunload', (e) => { if (!backslashPressed) { e.preventDefault(); e.returnValue = ''; return ''; } });
+
+      /***** Reply functionality: show quoted message and ESC to clear *****/
+      let replyToMessage = null;
+      function setReplyTo(messageObj){
+        replyToMessage = messageObj;
+        const name = messageObj.username || messageObj.name || 'Unknown';
+        const txt = messageObj.message || messageObj.text || messageObj.content || '';
+        messageInput.placeholder = `Replying to ${name}: "${truncateText(txt, 60)}" (Esc to cancel)`;
+        messageInput.focus();
+      }
+      function clearReplyTo(){
+        replyToMessage = null;
+        messageInput.placeholder = 'Message (Shift+Enter for newline)';
+      }
+      document.addEventListener('keydown', (e)=>{
+        if(e.key === 'Escape'){ clearReplyTo(); }
+      });
+
+      /***** Pinned messages UI & storage *****/
+      function isMessagePinned(msg){
+        if(!msg || !msg.id) return false;
+        return pinnedMessages.includes(String(msg.id));
+      }
+      function refreshPinnedUI(){
+        if(pinnedMessages.length === 0){ pinnedSection.style.display='none'; pinnedList.innerHTML=''; return; }
+        pinnedSection.style.display='block';
+        pinnedList.innerHTML = '';
+        pinnedMessages.forEach(id=>{
+          const item = document.createElement('div'); item.className = 'pinnedItem';
+          item.textContent = `Message ID: ${id}`;
+          const btn = document.createElement('button'); btn.textContent = 'Unpin'; btn.style.marginLeft='auto';
+          btn.className = 'toggleBtn';
+          btn.onclick = ()=> { pinnedMessages = pinnedMessages.filter(x=>x!==id); localStorage.setItem('notcord_pins', JSON.stringify(pinnedMessages)); refreshPinnedUI(); fetchMessages().catch(()=>{}); };
+          item.appendChild(btn);
+          pinnedList.appendChild(item);
+        });
+      }
+      clearPinsBtn.addEventListener('click', ()=>{ pinnedMessages = []; localStorage.setItem('notcord_pins', JSON.stringify(pinnedMessages)); refreshPinnedUI(); });
+
+      // Right-click on message to pin/unpin
+      messagesEl.addEventListener('contextmenu', (e)=>{
+        const msgEl = e.target.closest('.message');
+        if(!msgEl) return;
+        e.preventDefault();
+        const msgId = msgEl.dataset.msgId;
+        if(!msgId) return;
+        if(pinnedMessages.includes(msgId)) pinnedMessages = pinnedMessages.filter(x=>x!==msgId);
+        else pinnedMessages.push(msgId);
+        localStorage.setItem('notcord_pins', JSON.stringify(pinnedMessages));
+        refreshPinnedUI();
+        // visual feedback
+        msgEl.style.outline = '2px solid rgba(88,101,242,0.12)';
+        setTimeout(()=> msgEl.style.outline = '', 1200);
+      });
+
+      /***** Event wiring *****/
       channelsEl.addEventListener('click', (e)=>{
         const ch = e.target.closest('.channel');
         if(!ch) return;
@@ -725,16 +815,69 @@
       setNameBtn.addEventListener('click', async ()=>{
         let val = usernameInput.value.trim();
         if(!val) val = 'Guest' + Math.floor(Math.random()*9000+1000);
+        if(val.length > NAME_MAX_LENGTH) val = val.slice(0, NAME_MAX_LENGTH);
+        // set first time or obey weekly restriction if exists
+        const lastChange = Number(localStorage.getItem(NAME_CHANGE_KEY) || 0);
+        if(localStorage.getItem('notcord_username') && now() - lastChange < WEEK_MS){
+          alert('Name can only be changed once per week.');
+          return;
+        }
         username = val;
         localStorage.setItem('notcord_username', username);
+        localStorage.setItem(NAME_CHANGE_KEY, String(now()));
         usernameBox.style.display = 'none'; usernameLocked.style.display = 'flex'; usernameDisplay.textContent = username;
+        if(avatarDataUrl) userAvatarSmall.src = avatarDataUrl; else userAvatarSmall.src = '';
         await upsertLocalPlayer(); await setLocalPlayerOnlineState(true); startHeartbeat(); await fetchPlayers(); updateCharCountAndState();
+      });
+
+      changeNameBtn.addEventListener('click', ()=>{
+        // allow changing name if weekly passed
+        const lastChange = Number(localStorage.getItem(NAME_CHANGE_KEY) || 0);
+        if(!username){ alert('Set a username first'); return; }
+        if(now() - lastChange < WEEK_MS){
+          const remaining = Math.ceil((WEEK_MS - (now() - lastChange))/1000/60/60/24);
+          alert('You can change name in ' + remaining + ' day(s).');
+          return;
+        }
+        // show prompt to change
+        const newName = prompt('Enter new name (max 8 characters):', username);
+        if(newName){
+          const v = newName.trim().slice(0, NAME_MAX_LENGTH);
+          username = v;
+          localStorage.setItem('notcord_username', username);
+          localStorage.setItem(NAME_CHANGE_KEY, String(now()));
+          usernameDisplay.textContent = username;
+          await upsertLocalPlayer(); await setLocalPlayerOnlineState(true); fetchPlayers().catch(()=>{});
+        }
+      });
+
+      avatarInput.addEventListener('change', async ()=>{
+        if(!avatarInput.files.length) return;
+        const lastAvatarChange = Number(localStorage.getItem(AVATAR_CHANGE_KEY) || 0);
+        if(localStorage.getItem('notcord_avatar') && now() - lastAvatarChange < WEEK_MS){
+          alert('Avatar can only be changed once per week.');
+          avatarInput.value = '';
+          return;
+        }
+        const file = avatarInput.files[0];
+        try{
+          const dataUrl = await resizeImageFileIfNeeded(file, 128, 128); // small avatar resize
+          avatarDataUrl = dataUrl;
+          localStorage.setItem('notcord_avatar', avatarDataUrl);
+          localStorage.setItem(AVATAR_CHANGE_KEY, String(now()));
+          if(username){
+            userAvatarSmall.src = avatarDataUrl;
+            await upsertLocalPlayer();
+          }
+          setStatus('Avatar updated');
+        }catch(e){ console.error(e); alert('Failed to set avatar'); }
+        avatarInput.value = '';
       });
 
       sendBtn.addEventListener('click', ()=>{
         const txt = messageInput.value;
         postMessage(txt);
-        messageInput.value = ''; updateCharCountAndState();
+        messageInput.value = ''; updateCharCountAndState(); clearReplyTo();
         const map = readTypingMap(); if(map[activeChannel] && map[activeChannel][username]){ delete map[activeChannel][username]; writeTypingMap(map); updateTypingUI(); }
       });
 
@@ -767,96 +910,56 @@
         updateInputArea();
         if(polling) clearInterval(polling);
         await fetchMessages();
-        if(id !== 'announcements') polling = setInterval(fetchMessages, 4000);
+        if(id !== 'photos') polling = setInterval(fetchMessages, 4000);
       }
 
-      function readTypingMap(){ try{ return JSON.parse(localStorage.getItem(TYPING_KEY)||'{}'); }catch(e){ return {}; } }
-      function writeTypingMap(m){ try{ localStorage.setItem(TYPING_KEY, JSON.stringify(m)); }catch(e){} }
       function cleanupTypingMap(){
-        const map = readTypingMap(); const now = Date.now(); let changed = false;
-        for(const ch of Object.keys(map)){ for(const u of Object.keys(map[ch])){ if(now - map[ch][u] > TYPING_EXPIRE_MS){ delete map[ch][u]; changed = true; } } if(Object.keys(map[ch]).length===0) delete map[ch]; }
+        const map = readTypingMap(); const nowTs = now(); let changed = false;
+        for(const ch of Object.keys(map)){ for(const u of Object.keys(map[ch])){ if(nowTs - map[ch][u] > TYPING_EXPIRE_MS){ delete map[ch][u]; changed = true; } } if(Object.keys(map[ch]).length===0) delete map[ch]; }
         if(changed) writeTypingMap(map);
         updateTypingUI();
       }
-      // Modify renderMessage to add reply button
-    function renderMessage(msg, localUser){
-      if(msg.privateTo && !(msg.privateTo === localUser || msg.username === localUser)) return null;
-      const container = document.createElement('div');
-      const author = msg.username || msg.name || 'Unknown';
-      const isMe = author === localUser;
-      container.className = 'message' + (isMe ? ' me' : '');
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
 
-      const meta = document.createElement('div'); meta.className = 'meta';
-      const nameEl = document.createElement('span'); nameEl.className = 'name'; nameEl.textContent = author;
-      // apply name color from message if present (server-side stored), otherwise apply local user's nameColor for own messages
-      if(msg.nameColor) nameEl.style.color = msg.nameColor;
-      else if(isMe && nameColor) nameEl.style.color = nameColor;
-
-      const timeEl = document.createElement('span'); timeEl.className = 'time'; timeEl.textContent = formatTime(msg.createdAt || msg.created_at || msg.timestamp || msg.time || '');
-      meta.appendChild(nameEl);
-      meta.appendChild(timeEl);
-      
-      // Add reply button
-      if (!isMe && !msg.privateTo) {
-        const replyBtn = document.createElement('button');
-        replyBtn.className = 'replyBtn';
-        replyBtn.textContent = 'Reply';
-        replyBtn.style.cssText = 'background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;margin-left:8px';
-        replyBtn.onclick = (e) => {
-          e.stopPropagation();
-          setReplyTo(msg);
-        };
-        meta.appendChild(replyBtn);
-      }
-
-      bubble.appendChild(meta);
-
-      if(msg.imageUrl){
-        const photoDiv = document.createElement('div'); photoDiv.className = 'photoMessage';
-        const img = document.createElement('img'); img.src = msg.imageUrl; img.alt = msg.message || 'photo';
-        img.addEventListener('click', ()=> window.open(img.src, '_blank'));
-        photoDiv.appendChild(img);
-        if(msg.message){
-          const caption = document.createElement('div'); caption.className = 'text'; caption.textContent = msg.message;
-          photoDiv.appendChild(caption);
-        }
-        bubble.appendChild(photoDiv);
-      } else {
-        const text = document.createElement('div'); text.className = 'text'; text.textContent = msg.message || msg.text || msg.content || '';
-        bubble.appendChild(text);
-      }
-
-      // Add reply tag if this is a reply
-      if (msg.replyTo) {
-        const replyTag = document.createElement('div');
-        replyTag.className = 'replyTag';
-        replyTag.style.cssText = 'font-size:12px;color:var(--muted);margin-top:4px';
-        replyTag.textContent = `Replying to ${msg.replyTo}`;
-        bubble.appendChild(replyTag);
-      }
-
-      container.appendChild(bubble);
-      return container;
-    }
-
+      /***** Initialization *****/
       async function init(){
         applyTheme(); initializeAppearanceInputs();
-        if(username){ usernameBox.style.display='none'; usernameLocked.style.display='flex'; usernameDisplay.textContent = username; await upsertLocalPlayer(); await setLocalPlayerOnlineState(true); startHeartbeat(); } else { usernameBox.style.display='flex'; usernameLocked.style.display='none'; }
+        // load pinned messages
+        pinnedMessages = JSON.parse(localStorage.getItem('notcord_pins') || '[]');
+        refreshPinnedUI();
+
+        // restore user/avatar
+        avatarDataUrl = localStorage.getItem('notcord_avatar') || '';
+        if(username){ usernameBox.style.display='none'; usernameLocked.style.display='flex'; usernameDisplay.textContent = username; if(avatarDataUrl) userAvatarSmall.src = avatarDataUrl; await upsertLocalPlayer(); await setLocalPlayerOnlineState(true); startHeartbeat(); } else { usernameBox.style.display='flex'; usernameLocked.style.display='none'; }
+
+        // show name change info
+        updateNameChangeInfo();
+
         await setActiveChannel(activeChannel); await fetchPlayers(); if(playersPolling) clearInterval(playersPolling); playersPolling = setInterval(fetchPlayers, 5000);
         setInterval(cleanupTypingMap, 2000);
         setStatus('Connected (polling every 4s)');
       }
       init();
 
+      function updateNameChangeInfo(){
+        const lastName = Number(localStorage.getItem(NAME_CHANGE_KEY) || 0);
+        const lastAvatar = Number(localStorage.getItem(AVATAR_CHANGE_KEY) || 0);
+        const nameText = lastName ? ('Name changed: ' + new Date(lastName).toLocaleString()) : 'Name change available now';
+        const avText = lastAvatar ? ('Avatar changed: ' + new Date(lastAvatar).toLocaleString()) : 'Avatar change available now';
+        nameChangeInfo.textContent = nameText + ' • ' + avText;
+      }
+
+      // update name change info periodically
+      setInterval(updateNameChangeInfo, 60*1000);
+
+      // visibility API handling: when page hidden but computer on -> set idle indicator (yellow)
       document.addEventListener('visibilitychange', async ()=>{
         if(!username) return;
         if(document.hidden){
+          // mark local player offline=false but idle (we set lastSeen but include a flag maybe)
           try{
             if(localPlayerId && navigator.sendBeacon){
               const url = `${PLAYERS_API}/${localPlayerId}`;
-              const payload = JSON.stringify({ lastSeen: new Date().toISOString(), online:false, name: username, nameColor });
+              const payload = JSON.stringify({ lastSeen: new Date().toISOString(), online:false, idle:true, name: username, nameColor, avatar: avatarDataUrl });
               const blob = new Blob([payload], { type: 'application/json' });
               navigator.sendBeacon(url, blob);
             } else {
@@ -865,16 +968,18 @@
           }catch(e){}
           stopHeartbeat();
         } else {
+          // back to site
           await upsertLocalPlayer();
           startHeartbeat();
         }
       });
 
+      // also when window unload, clear online
       window.addEventListener('beforeunload', ()=>{
         try{
           if(localPlayerId){
             const url = `${PLAYERS_API}/${localPlayerId}`;
-            const payload = JSON.stringify({ lastSeen: new Date().toISOString(), online:false, name: username, nameColor });
+            const payload = JSON.stringify({ lastSeen: new Date().toISOString(), online:false, idle:false, name: username, nameColor, avatar: avatarDataUrl });
             if(navigator.sendBeacon){
               const blob = new Blob([payload], { type: 'application/json' });
               navigator.sendBeacon(url, blob);
@@ -885,8 +990,24 @@
         }catch(e){}
       });
 
-      // expose for quick debugging
-      window._notcord = { muteMap, fetchMessages, fetchPlayers };
+      // Show idle in players list by translating idle flag into yellow marker (server changes not guaranteed in this mock API)
+      // For local UI we mark ourselves idle if document.hidden
+      setInterval(()=>{
+        // update our local display dot next to our name in players list if hidden
+        Array.from(playersListEl.querySelectorAll('.player')).forEach(item=>{
+          const name = item.querySelector('.playerName')?.textContent || '';
+          if(username && name.includes(username)){
+            if(document.hidden){
+              const dot = item.querySelector('.statusDot');
+              if(dot){ dot.style.background = 'var(--idle-yellow)'; dot.style.boxShadow = '0 0 8px rgba(240,196,25,0.12)'; }
+            }
+          }
+        });
+      }, 2000);
+
+      // expose some helpers for manual pin/unpin debugging
+      window._notcord = { muteMap, fetchMessages, fetchPlayers, pinnedMessages };
+
     })();
   </script>
 </body>
