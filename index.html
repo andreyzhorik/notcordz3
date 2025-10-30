@@ -3,889 +3,570 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>notcord — multi-channel (updated)</title>
+  <title>notcord — refreshed UI</title>
   <style>
     :root{
-      --theme-1: #071226;
-      --theme-2: #07101a;
-      --theme-3: #0b2233;    /* chat bubbles & logo */ 
-      --muted: #9aa4b2;
+      --bg-a: #071226;   /* theme 1 */
+      --bg-b: #07101a;   /* theme 2 */
       --accent: #5865f2;
-      --me-bg: #2b3440;
-      --border: rgba(255,255,255,0.06);
+      --muted: #9aa4b2;
+      --card: #0b2233;
       --text: #e6eef6;
+      --me-bg: #22303a;
       --pin-bg: rgba(88,101,242,0.12);
     }
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Helvetica,Arial;color:var(--text);
-      background:linear-gradient(180deg,var(--theme-1) 0%, var(--theme-2) 100%);
-      -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
-    }
-    .app { width:100%; height:100vh; display:grid; grid-template-columns:300px 1fr 260px; overflow:hidden; gap:8px; padding:8px; }
-    .sidebar{ padding:14px; display:flex; flex-direction:column; gap:12px; height:calc(100vh - 16px); overflow:auto; background:linear-gradient(180deg,var(--theme-1),var(--theme-2)); border-radius:12px; border:1px solid var(--border) }
-    .brand{display:flex;gap:10px;align-items:center;font-weight:800;font-size:18px}
-    .brand .dot{width:34px;height:34px;border-radius:8px;background:var(--theme-2);box-shadow:0 6px 20px rgba(11,34,51,0.35);display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--text)}
-    .brand .name{color:var(--theme-3);font-weight:800;font-size:18px}
-    .usernameBox{display:flex;gap:8px;align-items:center}
-    .usernameBox input{flex:1;padding:10px 12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:inherit;outline:none}
-    .usernameBox button{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
-    .usernameLocked{display:flex;gap:8px;align-items:center;padding:8px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);font-weight:600;overflow:hidden}
-    .channels{margin-top:6px;display:flex;flex-direction:column;gap:6px}
-    .channel{padding:10px 12px;border-radius:10px;color:var(--muted);cursor:pointer;border:1px solid transparent;display:flex;justify-content:space-between;align-items:center;font-weight:600}
-    .channel:hover{background:rgba(255,255,255,0.01)}
-    .channel.active{background:linear-gradient(90deg, rgba(88,101,242,0.12), rgba(88,101,242,0.02));color:var(--text);border-color:rgba(88,101,242,0.12)}
-    .settings{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:8px;border-top:1px solid var(--border)}
-    .settings label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
-    .settings input[type="color"]{width:48px;height:32px;padding:0;border:none;background:transparent;cursor:pointer}
-    .settings .toggleBtn{padding:8px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer}
-    .chatPanel{display:flex;flex-direction:column;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);position:relative;min-height:0;border-radius:12px;border:1px solid var(--border);overflow:hidden}
-    .chatBox{display:flex;flex-direction:column;height:100%;min-height:0}
-    .header{padding:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:transparent}
-    .header h2{margin:0;font-size:18px;display:flex;gap:8px;align-items:center}
-    .logoSmall{width:30px;height:30px;border-radius:6px;background:var(--theme-2);display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:var(--text);box-shadow:0 6px 18px rgba(2,6,23,0.6)}
-    .header .spacer{flex:1}
-    .header .right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
-    .status{color:var(--muted);font-size:13px}
-    .typing{color:var(--muted);font-size:12px;height:18px}
-    .messages{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;min-height:0;background:transparent}
-    .pinnedBar{padding:8px 16px;border-bottom:1px solid rgba(255,255,255,0.02);background:linear-gradient(180deg, rgba(88,101,242,0.03), transparent);display:flex;gap:8px;align-items:center}
-    .pinChip{background:var(--pin-bg);padding:6px 10px;border-radius:10px;font-size:13px;color:var(--text);display:flex;gap:8px;align-items:center}
-    .message{display:flex;gap:12px;align-items:flex-start;max-width:85%}
-    .message.me{margin-left:auto;justify-content:flex-end}
-    .avatar{width:40px;height:40px;border-radius:8px;background:linear-gradient(180deg,var(--theme-3),#0a2b3b);flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:var(--text);overflow:hidden}
-    .avatar img{width:100%;height:100%;object-fit:cover;border-radius:8px}
-    .bubble{
-      background:var(--theme-3);
-      color:var(--text);
-      padding:10px 12px;border-radius:12px;display:flex;flex-direction:column;gap:6px;word-break:break-word;
-      border-left:4px solid rgba(0,0,0,0.08);
-      box-shadow:0 6px 18px rgba(2,6,23,0.6);
-      max-width:640px;
-    }
-    .message.me .bubble{ background:var(--theme-3); border-left-color: var(--accent); transform: translateY(0); }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Helvetica,Arial;color:var(--text);background:linear-gradient(180deg,var(--bg-a),var(--bg-b));-webkit-font-smoothing:antialiased}
+    /* New layout: left compact server / center chat / right members collapsed section */
+    .app{height:100vh;display:grid;grid-template-columns:80px 1fr 280px;gap:12px;padding:12px;align-items:stretch}
+    /* server column */
+    .servers{background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px;align-items:center;border:1px solid rgba(255,255,255,0.04)}
+    .serverBtn{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;background:transparent;border:1px solid transparent;color:var(--text);cursor:pointer}
+    .serverBtn.active{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.04)}
+    /* main chat card */
+    .chatCard{border-radius:12px;padding:0;display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(255,255,255,0.04);background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
+    .chatHeader{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.03);background:linear-gradient(90deg, rgba(255,255,255,0.01), transparent)}
+    .chatHeader .title{font-weight:800;font-size:18px}
+    .chatHeader .subtitle{color:var(--muted);font-size:13px}
+    .messages{flex:1;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:12px;min-height:0}
+    .messageRow{display:flex;gap:12px;align-items:flex-start}
+    .messageRow.me{flex-direction:row-reverse}
+    .avatar{width:44px;height:44px;border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--text);overflow:hidden;flex-shrink:0}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .bubble{max-width:78%;padding:10px 12px;border-radius:12px;background:var(--card);box-shadow:0 6px 18px rgba(2,6,23,0.45);color:var(--text);display:flex;flex-direction:column;gap:8px}
+    .messageRow.me .bubble{background:var(--me-bg)}
     .meta{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
-    .meta .name{font-weight:700;display:flex;gap:8px;align-items:center}
-    .meta .time{font-size:12px;color:var(--muted)}
-    .text{white-space:pre-wrap;color:inherit;font-size:15px;word-break:break-word;overflow-wrap:break-word}
-    .privateTag{font-size:12px;color:#ffd980;margin-left:8px}
-    .photoMessage img { max-width: 100%; height:auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor:pointer; transition:transform .15s; display:block }
-    .photoMessage img:hover{ transform: scale(1.02) }
-    .inputArea{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
-    .inputArea textarea{flex:1;min-height:56px;max-height:220px;resize:none;padding:12px;border-radius:12px;background:transparent;border:1px solid var(--border);color:inherit;outline:none}
-    .controls{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:140px}
-    .charCount{font-size:12px;color:var(--muted)}
-    .sendBtn{background:var(--accent);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+    .meta .name{font-weight:700}
+    .controls{display:flex;gap:6px;margin-left:auto}
+    .smallBtn{background:transparent;border:1px solid rgba(255,255,255,0.03);padding:6px 8px;border-radius:8px;color:var(--muted);cursor:pointer}
+    .pinnedBar{padding:10px;border-bottom:1px solid rgba(255,255,255,0.02);display:flex;gap:8px;align-items:center;background:linear-gradient(180deg, rgba(88,101,242,0.03), transparent)}
+    .pinChip{background:var(--pin-bg);padding:6px 10px;border-radius:10px;font-size:13px;color:var(--text);display:flex;gap:8px;align-items:center}
+    .inputArea{padding:12px;border-top:1px solid rgba(255,255,255,0.03);display:flex;gap:8px;align-items:flex-end;background:linear-gradient(180deg, transparent, rgba(0,0,0,0.02))}
+    .textInput{flex:1;min-height:56px;max-height:320px;padding:12px;border-radius:12px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--text);outline:none;resize:none}
+    .sendBtn{background:var(--accent);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700}
     .sendBtn:disabled{opacity:0.6;cursor:default}
-    .photoUploadArea { padding:12px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:center; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent) }
-    .photoUploadArea input[type=file]{ flex:1 }
-    .photoUploadArea button{ background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer }
-    .playersPanel{background:linear-gradient(180deg,var(--theme-1),var(--theme-2));border-radius:12px;border:1px solid var(--border);padding:14px;display:flex;flex-direction:column;gap:12px;height:calc(100vh - 16px);overflow:auto}
-    .playersPanel h3{margin:0;font-size:15px;color:var(--muted)}
-    .playersList{display:flex;flex-direction:column;gap:8px;overflow:auto}
-    .player{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid transparent;color:var(--text)}
-    .player.offline{opacity:0.6}
-    .player .statusDot{width:12px;height:12px;border-radius:50%;margin-right:8px;flex-shrink:0}
-    .player.online .statusDot{background:#39d353;box-shadow:0 0 8px rgba(57,211,83,0.12)}
-    .player.idle .statusDot{background: #f5c74a; box-shadow:0 0 8px rgba(245,199,74,0.12)}
-    .player.offline .statusDot{background:#a0a0a0}
-    .player .playerName{font-weight:600}
-    .controlsRow{display:flex;gap:8px;align-items:center}
-    .smallBtn{padding:6px 8px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer}
-    .replyBox{padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);display:flex;gap:8px;align-items:center;border:1px solid var(--border)}
-    .pinnedList{display:flex;gap:8px;overflow:auto;padding:8px}
-    @media (max-width:980px){ .app{grid-template-columns:220px 1fr 160px} }
-    @media (max-width:720px){ .app{grid-template-columns:1fr} .sidebar,.playersPanel{display:none} }
+    .toolbar{display:flex;gap:8px;align-items:center}
+    /* right panel */
+    .rightPanel{border-radius:12px;padding:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:12px}
+    .sectionTitle{font-size:13px;color:var(--muted);font-weight:700}
+    .player{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.01)}
+    .player .dot{width:10px;height:10px;border-radius:50%;background:#39d353;box-shadow:0 0 8px rgba(57,211,83,0.08)}
+    .themes{display:flex;gap:8px;align-items:center}
+    .themeBtn{padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);cursor:pointer;color:var(--muted);background:transparent}
+    /* emoji picker */
+    .emojiPicker{position:absolute;z-index:60;background:rgba(0,0,0,0.8);padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:grid;grid-template-columns:repeat(8,28px);gap:6px}
+    .emojiItem{cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
+    /* photos */
+    .photoMessage img{max-width:100%;height:auto;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.45);cursor:pointer}
+    /* responsive */
+    @media (max-width:980px){ .app{grid-template-columns:64px 1fr 200px} .rightPanel{display:none} }
+    @media (max-width:720px){ .app{grid-template-columns:64px 1fr} .rightPanel{display:none} }
   </style>
 </head>
 <body>
   <div class="app" id="app">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="dot logoSmall" id="brandLogo">N</div>
-        <div class="name">notcord</div>
+    <div class="servers" aria-label="servers">
+      <button class="serverBtn active" title="notcord">N</button>
+      <button class="serverBtn" title="photos">P</button>
+      <button class="serverBtn" title="settings">S</button>
+    </div>
+
+    <main class="chatCard" id="chatCard">
+      <div class="chatHeader">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="width:48px;height:48px;border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:center;font-weight:900">N</div>
+          <div>
+            <div class="title" id="channelTitle"># general</div>
+            <div class="subtitle" id="channelSubtitle">Welcome to notcord — use @name to mention</div>
+          </div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="status" style="color:var(--muted);font-size:13px">Connecting...</div>
+        </div>
       </div>
 
-      <div id="usernameSection">
-        <div class="usernameBox" id="usernameBox">
-          <input type="text" id="usernameInput" placeholder="Choose username (max 8 chars)" maxlength="8" />
-          <button id="setNameBtn">Set</button>
-        </div>
-        <div class="usernameLocked" id="usernameLocked" style="display:none">
+      <div id="pinnedBar" class="pinnedBar" style="display:none">
+        <div style="font-size:13px;color:var(--muted)">Pinned</div>
+        <div id="pinnedList" style="display:flex;gap:8px;overflow:auto"></div>
+      </div>
+
+      <div id="messages" class="messages" role="log" aria-live="polite"></div>
+
+      <div class="inputArea" id="inputArea">
+        <textarea id="messageInput" class="textInput" placeholder="Message (Shift+Enter for newline)" maxlength="200"></textarea>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+          <div class="toolbar">
+            <button id="emojiBtn" class="smallBtn" title="Emoji">😊</button>
+            <button id="attachBtn" class="smallBtn" title="Attach photo">📎</button>
+            <input id="photoInput" type="file" accept="image/*,image/gif" style="display:none">
+          </div>
           <div style="display:flex;gap:8px;align-items:center">
-            <div class="avatar" id="userAvatar"><span id="avatarInitials">G</span></div>
-            <div>
-              <div id="usernameDisplay"></div>
-              <div style="font-size:12px;color:var(--muted)" id="nameChangeInfo"></div>
+            <div style="font-size:12px;color:var(--muted)" id="charCount">0 / 200</div>
+            <button id="sendBtn" class="sendBtn" disabled>Send</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="rightPanel" id="rightPanel">
+      <div>
+        <div class="sectionTitle">Appearance</div>
+        <div style="margin-top:8px" class="themes">
+          <button class="themeBtn" data-theme="1">Theme 1</button>
+          <button class="themeBtn" data-theme="2">Theme 2</button>
+          <button class="themeBtn" data-theme="3">Theme 3</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="sectionTitle">Profile</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+          <div id="userAvatar" class="avatar">G</div>
+          <div style="flex:1">
+            <input id="usernameInput" placeholder="username (max 8)" maxlength="8" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--text)" />
+            <div style="margin-top:6px;display:flex;gap:6px">
+              <button id="setNameBtn" class="smallBtn">Set</button>
+              <input id="nameColor" type="color" title="Name color" style="width:40px;height:32px;padding:0;border-radius:6px;border:none;background:transparent"/>
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="channels" id="channels">
-        <div class="channel active" data-id="general" role="button"># general</div>
-        <div class="channel" data-id="photos" role="button"># photos</div>
-      </div>
-
-      <div class="settings" aria-label="Appearance settings">
-        <label>Your avatar (change once/week)
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="file" accept="image/*" id="avatarInput" />
-            <button id="changeAvatarBtn" class="toggleBtn">Upload</button>
-          </div>
-        </label>
-
-        <label>Your name color
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="color" id="nameColor" title="Name color" />
-            <div style="flex:1"></div>
-            <button id="resetNameColor" class="toggleBtn">Reset</button>
-          </div>
-        </label>
-
-        <div style="font-size:12px;color:var(--muted);padding-top:6px">
-          Username & appearance saved in this browser.<br/>Use "/w name text" to whisper. Use @name to ping.
-        </div>
-      </div>
-    </aside>
-
-    <section class="chatPanel">
-      <div class="chatBox" id="chatBox">
-        <div class="header">
-          <h2 id="channelTitle"><span class="logoSmall" id="logoHeader">N</span> <span id="channelName"># general</span></h2>
-          <div class="spacer"></div>
-          <div class="right">
-            <div id="status" class="status">Connecting...</div>
-            <div id="typingIndicator" class="typing"></div>
-          </div>
-        </div>
-
-        <div class="pinnedBar" id="pinnedBar" style="display:none">
-          <div style="font-size:13px;color:var(--muted)">Pinned:</div>
-          <div class="pinnedList" id="pinnedList"></div>
-        </div>
-
-        <div class="messages" id="messages" role="log" aria-atomic="false"></div>
-
-        <div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)">
-          <div id="replyPreview" style="display:none"></div>
-          <div class="inputArea" id="inputWrapper">
-            <textarea id="messageInput" placeholder="Message (Shift+Enter for newline)" maxlength="200"></textarea>
-            <div class="controls">
-              <div class="charCount" id="charCount">0 / 200</div>
-              <div style="display:flex;gap:8px">
-                <button id="emojiBtn" class="smallBtn">GIF</button>
-                <button id="sendBtn" class="sendBtn" disabled>Send</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="photoUploadArea" id="photoUploadWrapper" style="display:none">
-            <input type="file" id="photoInput" accept="image/*,image/gif" />
-            <button id="uploadPhotoBtn" disabled>Upload</button>
+        <div style="margin-top:8px">
+          <label style="font-size:12px;color:var(--muted)">Avatar (change once/week)</label>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <input id="avatarInput" type="file" accept="image/*" />
+            <button id="changeAvatarBtn" class="smallBtn">Upload</button>
           </div>
         </div>
       </div>
-    </section>
 
-    <aside class="playersPanel" id="playersPanel">
-      <h3>Players</h3>
-      <div id="playersStatus" style="font-size:13px;color:var(--muted)">Loading...</div>
-      <div style="height:6px"></div>
-      <div class="playersList" id="playersList" aria-live="polite"></div>
+      <div>
+        <div class="sectionTitle">Players</div>
+        <div id="playersList" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
+      </div>
     </aside>
   </div>
 
   <script>
     (function(){
-      // Channel endpoints simplified
-      const CHANNELS = {
-        general: 'https://68e839b2f2707e6128ca35e1.mockapi.io/chat',
-        photos: 'https://68eeed86b06cc802829ba196.mockapi.io/photos'
-      };
+      // Simplified endpoints (mockapi used previously)
+      const CHANNELS = { general: 'https://68e839b2f2707e6128ca35e1.mockapi.io/chat', photos: 'https://68eeed86b06cc802829ba196.mockapi.io/photos' };
       const PLAYERS_API = 'https://68e839b2f2707e6128ca35e1.mockapi.io/players';
 
-      // minimal bad words examples
-      const BAD_WORDS = ['fuck','bitch','nigger','нахуй','гей','gay','хуета'];
-
-      // UI refs
-      const channelsEl = document.getElementById('channels');
-      const channelTitleEl = document.getElementById('channelName');
+      // DOM refs
       const messagesEl = document.getElementById('messages');
       const statusEl = document.getElementById('status');
-      const typingIndicatorEl = document.getElementById('typingIndicator');
       const messageInput = document.getElementById('messageInput');
       const sendBtn = document.getElementById('sendBtn');
       const charCountEl = document.getElementById('charCount');
-      const inputWrapper = document.getElementById('inputWrapper');
-      const photoUploadWrapper = document.getElementById('photoUploadWrapper');
-      const photoInput = document.getElementById('photoInput');
-      const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
       const emojiBtn = document.getElementById('emojiBtn');
+      const attachBtn = document.getElementById('attachBtn');
+      const photoInput = document.getElementById('photoInput');
+      const pinnedBar = document.getElementById('pinnedBar');
+      const pinnedList = document.getElementById('pinnedList');
 
-      const usernameBox = document.getElementById('usernameBox');
       const usernameInput = document.getElementById('usernameInput');
       const setNameBtn = document.getElementById('setNameBtn');
-      const usernameLocked = document.getElementById('usernameLocked');
-      const usernameDisplay = document.getElementById('usernameDisplay');
       const nameColorInput = document.getElementById('nameColor');
-      const resetNameColorBtn = document.getElementById('resetNameColor');
       const avatarInput = document.getElementById('avatarInput');
       const changeAvatarBtn = document.getElementById('changeAvatarBtn');
       const userAvatarEl = document.getElementById('userAvatar');
-      const avatarInitials = document.getElementById('avatarInitials');
 
-      const playersListEl = document.getElementById('playersList');
-      const playersStatusEl = document.getElementById('playersStatus');
-
-      const pinnedBar = document.getElementById('pinnedBar');
-      const pinnedList = document.getElementById('pinnedList');
-      const replyPreview = document.getElementById('replyPreview');
+      const themeButtons = document.querySelectorAll('.themeBtn');
 
       // state
-      let activeChannel = localStorage.getItem('notcord_channel') || 'general';
-      let apiBase = CHANNELS[activeChannel] || null;
-      let polling = null;
-      let playersPolling = null;
-      let heartbeatInterval = null;
-      let isSending = false;
-      const MAX_CHARS = 200;
-      const TYPING_KEY = 'notcord_typing_v4';
-      const TYPING_EXPIRE_MS = 5000;
-      const HEARTBEAT_MS = 5000;
-      const PLAYER_OFFLINE_THRESHOLD_MS = 15000;
-
-      // user
       let username = localStorage.getItem('notcord_username') || '';
       let nameColor = localStorage.getItem('notcord_nameColor') || '#ffcc00';
-      let themeColor1 = localStorage.getItem('notcord_theme1') || '#071226';
-      let themeColor2 = localStorage.getItem('notcord_theme2') || '#07101a';
-      let themeColor3 = localStorage.getItem('notcord_theme3') || '#0b2233';
-      let accentColor = localStorage.getItem('notcord_accent') || themeColor1;
-      let localPlayerId = localStorage.getItem('notcord_playerId') || null;
       let avatarDataUrl = localStorage.getItem('notcord_avatar') || null;
-      let avatarChangedAt = Number(localStorage.getItem('notcord_avatar_changed') || 0);
       let nameChangedAt = Number(localStorage.getItem('notcord_name_changed') || 0);
-
-      // pinned messages stored locally (id or timestamp + content)
+      let avatarChangedAt = Number(localStorage.getItem('notcord_avatar_changed') || 0);
       let pinned = JSON.parse(localStorage.getItem('notcord_pins') || '[]');
+      let activeChannel = 'general';
+      let apiBase = CHANNELS[activeChannel];
+      let polling = null;
+      const MAX_CHARS = 200;
+      const ONE_WEEK_MS = 7*24*60*60*1000;
 
-      // reply state
-      let replyToMessage = null;
+      // emoji picker
+      const EMOJIS = ['😀','😁','😂','🤣','😊','😍','😎','😉','👍','🙏','🔥','🎉','💯','🧡','🤝','✨','🤔','😅','😢','😡','👏','🙌','🤩','😴','😜','🙃','😇','😬','🤖','🌟','🍕','☕'];
+      let emojiPickerEl = null;
 
-      // helpers
+      // basic bad words
+      const BAD_WORDS = ['fuck','bitch','nigger','нахуй','гей','gay','хуета'];
+
+      // css themes definitions
+      const THEMES = {
+        1: { bgA:'#071226', bgB:'#07101a', card:'#0b2233', accent:'#5865f2' },
+        2: { bgA:'#00111a', bgB:'#001822', card:'#082233', accent:'#3ba55d' },
+        3: { bgA:'#1c0b1e', bgB:'#301124', card:'#2b1030', accent:'#ff7b00' }
+      };
+
+      /* utility */
       function setStatus(txt){ statusEl.textContent = txt; }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-      function formatTime(iso){ try{ const d=new Date(iso); if(isNaN(d)) return ''; return d.toLocaleString([], {hour:'2-digit', minute:'2-digit'}); }catch(e){return ''} }
-      function applyTheme(){ document.documentElement.style.setProperty('--theme-1', themeColor1); document.documentElement.style.setProperty('--theme-2', themeColor2); document.documentElement.style.setProperty('--theme-3', themeColor3); document.documentElement.style.setProperty('--accent', accentColor || themeColor1); }
-      function initializeAppearanceInputs(){ nameColorInput.value = nameColor; }
-
-      // Typing indicator (localStorage)
-      function readTypingMap(){ try{ return JSON.parse(localStorage.getItem(TYPING_KEY)||'{}'); }catch(e){ return {}; } }
-      function writeTypingMap(m){ try{ localStorage.setItem(TYPING_KEY, JSON.stringify(m)); }catch(e){} }
-      function updateTypingUI(){
-        const map = readTypingMap();
-        const channelMap = map[activeChannel] || {};
-        const now = Date.now();
-        const typers = Object.keys(channelMap).filter(u => u !== username && (now - channelMap[u]) <= TYPING_EXPIRE_MS);
-        if(!typers.length) typingIndicatorEl.textContent = '';
-        else if(typers.length === 1) typingIndicatorEl.textContent = typers[0] + ' is typing...';
-        else typingIndicatorEl.textContent = typers[0] + ' and ' + (typers.length-1) + ' others are typing...';
-      }
-      window.addEventListener('storage', (e)=> { if(e.key === TYPING_KEY) updateTypingUI(); });
-
-      // mute map
-      const muteMap = new Map();
-      function isUserMuted(user){
-        const t = muteMap.get(user);
-        if(!t) return false;
-        if(Date.now() > t){ muteMap.delete(user); return false; }
-        return true;
-      }
-      function muteUser(user, seconds=120){ muteMap.set(user, Date.now() + seconds*1000); }
-
+      function formatTime(iso){ try{ const d=new Date(iso); if(isNaN(d)) return ''; return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }catch(e){return ''} }
+      function savePins(){ localStorage.setItem('notcord_pins', JSON.stringify(pinned)); renderPinned(); }
       function containsBadWords(text){
         if(!text) return false;
         const lower = text.toLowerCase();
         return BAD_WORDS.some(w => w && lower.includes(w));
       }
 
-      // utility: shrink images (client-side) to fit max dims; returns Promise<DataURL>
-      function resizeImageFile(file, maxW=1280, maxH=1280){
-        return new Promise((resolve, reject)=>{
-          if(!file.type.startsWith('image/')) return reject('Not image');
-          const img = new Image();
-          const reader = new FileReader();
-          reader.onload = (e)=>{
-            img.onload = ()=>{
-              let {width:w, height:h} = img;
-              if(w <= maxW && h <= maxH){
-                return resolve(e.target.result); // no change
-              }
-              const ratio = Math.min(maxW/w, maxH/h);
-              const cw = Math.round(w*ratio), ch = Math.round(h*ratio);
-              const canvas = document.createElement('canvas'); canvas.width = cw; canvas.height = ch;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img,0,0,cw,ch);
-              const mime = file.type === 'image/gif' ? 'image/png' : file.type; // keep GIF as PNG (can't preserve animation easily)
-              const dataUrl = canvas.toDataURL(mime, 0.9);
-              resolve(dataUrl);
-            };
-            img.onerror = ()=> reject('Image load failed');
-            img.src = e.target.result;
-          };
-          reader.onerror = ()=> reject('Read failed');
-          reader.readAsDataURL(file);
-        });
+      /* theme application */
+      function applyTheme(num){
+        const t = THEMES[num] || THEMES[1];
+        document.documentElement.style.setProperty('--bg-a', t.bgA);
+        document.documentElement.style.setProperty('--bg-b', t.bgB);
+        document.documentElement.style.setProperty('--card', t.card);
+        document.documentElement.style.setProperty('--accent', t.accent);
+        localStorage.setItem('notcord_theme', String(num));
       }
 
-      // pinned rendering
+      /* pinned rendering */
       function renderPinned(){
         pinnedList.innerHTML = '';
         if(!pinned.length){ pinnedBar.style.display = 'none'; return; }
         pinnedBar.style.display = 'flex';
-        pinned.forEach((p, i)=>{
+        pinned.forEach((p,i)=>{
           const chip = document.createElement('div'); chip.className='pinChip';
-          chip.title = p.message || p.text || '';
-          chip.textContent = (p.username ? p.username + ': ' : '') + ((p.message||p.text||'').slice(0,40)) + ( (p.message||p.text||'').length>40? '…':'');
+          chip.textContent = (p.username? p.username+': ':'') + ((p.message||p.text||'').slice(0,40)) + ((p.message||'').length>40? '…':'');
           const unpin = document.createElement('button'); unpin.className='smallBtn'; unpin.textContent='Unpin';
-          unpin.onclick = ()=>{ pinned.splice(i,1); localStorage.setItem('notcord_pins', JSON.stringify(pinned)); renderPinned(); };
+          unpin.onclick = ()=>{ pinned.splice(i,1); savePins(); };
           chip.appendChild(unpin);
           pinnedList.appendChild(chip);
         });
       }
 
-      // render message (with avatar, ping highlight, reply, pin)
-      function renderMessage(msg, localUser){
-        if(msg.privateTo && !(msg.privateTo === localUser || msg.username === localUser)) return null;
-        const container = document.createElement('div');
-        container.className = 'message' + ( (msg.username || msg.name) === localUser ? ' me' : '' );
+      /* rendering messages */
+      function renderMessage(msg){
+        if(msg.privateTo && !(msg.privateTo === username || msg.username === username)) return null;
+        const row = document.createElement('div'); row.className='messageRow' + ((msg.username||'')===username ? ' me' : '');
 
-        const avatarWrap = document.createElement('div'); avatarWrap.className = 'avatar';
-        if(msg.avatar){
-          const im = document.createElement('img'); im.src = msg.avatar; avatarWrap.appendChild(im);
-        } else {
-          avatarWrap.textContent = (msg.username || msg.name || 'U').slice(0,1).toUpperCase();
-        }
+        const avatar = document.createElement('div'); avatar.className='avatar';
+        if(msg.avatar) { const im=document.createElement('img'); im.src=msg.avatar; avatar.appendChild(im); }
+        else avatar.textContent = (msg.username||'U').slice(0,1).toUpperCase();
 
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble';
-
-        const meta = document.createElement('div'); meta.className = 'meta';
-        const nameEl = document.createElement('span'); nameEl.className = 'name'; nameEl.textContent = msg.username || msg.name || 'Unknown';
+        const bubble = document.createElement('div'); bubble.className='bubble';
+        const meta = document.createElement('div'); meta.className='meta';
+        const nameEl = document.createElement('div'); nameEl.className='name'; nameEl.textContent = msg.username || 'Unknown';
         if(msg.nameColor) nameEl.style.color = msg.nameColor;
-        else if((msg.username || msg.name) === username && nameColor) nameEl.style.color = nameColor;
+        const timeEl = document.createElement('div'); timeEl.className='time'; timeEl.style.marginLeft='8px'; timeEl.style.fontSize='12px'; timeEl.style.color='var(--muted)'; timeEl.textContent = formatTime(msg.createdAt || msg.created_at || msg.timestamp || new Date().toISOString());
+        meta.appendChild(nameEl); meta.appendChild(timeEl);
 
-        const timeEl = document.createElement('span'); timeEl.className = 'time'; timeEl.textContent = formatTime(msg.createdAt || msg.created_at || msg.timestamp || msg.time || '');
-
-        meta.appendChild(nameEl);
-        meta.appendChild(timeEl);
-
-        // controls: reply/pin
-        const ctrl = document.createElement('div'); ctrl.style.marginLeft='auto';
+        const controls = document.createElement('div'); controls.className='controls';
         const replyBtn = document.createElement('button'); replyBtn.className='smallBtn'; replyBtn.textContent='Reply';
-        replyBtn.onclick = (e)=>{ e.stopPropagation(); setReplyTo(msg); };
+        replyBtn.onclick = ()=> setReplyTo(msg);
         const pinBtn = document.createElement('button'); pinBtn.className='smallBtn'; pinBtn.textContent='Pin';
-        pinBtn.onclick = (e)=>{ e.stopPropagation(); pinned.unshift({ username: msg.username, message: msg.message, createdAt: msg.createdAt, avatar: msg.avatar }); pinned = pinned.slice(0,10); localStorage.setItem('notcord_pins', JSON.stringify(pinned)); renderPinned(); };
-        ctrl.appendChild(replyBtn); ctrl.appendChild(pinBtn);
-        meta.appendChild(ctrl);
+        pinBtn.onclick = ()=> { pinned.unshift({ username: msg.username, message: msg.message || msg.text || '', createdAt: msg.createdAt || msg.created_at }); pinned = pinned.slice(0,10); savePins(); };
+        controls.appendChild(replyBtn); controls.appendChild(pinBtn);
+        meta.appendChild(controls);
 
         bubble.appendChild(meta);
 
-        // reply preview for this msg (when someone replies to a specific message)
         if(msg.replyTo){
-          const rt = document.createElement('div'); rt.className='replyTag'; rt.style.cssText='font-size:12px;color:var(--muted);margin-top:4px;border-left:3px solid rgba(255,255,255,0.03);padding-left:8px';
-          rt.textContent = `Reply to ${msg.replyTo.name || msg.replyTo.username || msg.replyTo}: ${ (msg.replyTo.message || msg.replyTo.text || '').slice(0,120) }`;
+          const rt = document.createElement('div'); rt.style.fontSize='12px'; rt.style.color='var(--muted)'; rt.style.borderLeft='3px solid rgba(255,255,255,0.03)'; rt.style.paddingLeft='8px';
+          rt.textContent = `Reply to ${(msg.replyTo.name || msg.replyTo.username || '')}: ${ (msg.replyTo.message || msg.replyTo.text || '').slice(0,120) }`;
           bubble.appendChild(rt);
         }
 
-        // Image or text
         if(msg.imageUrl){
-          const photoDiv = document.createElement('div'); photoDiv.className = 'photoMessage';
-          const img = document.createElement('img'); img.src = msg.imageUrl; img.alt = msg.message || 'photo';
+          const photoWrap = document.createElement('div'); photoWrap.className='photoMessage';
+          const img = document.createElement('img'); img.src = msg.imageUrl; img.alt = msg.message || '';
           img.addEventListener('click', ()=> window.open(img.src, '_blank'));
-          photoDiv.appendChild(img);
+          photoWrap.appendChild(img);
           if(msg.message){
-            const caption = document.createElement('div'); caption.className = 'text'; caption.textContent = msg.message;
-            photoDiv.appendChild(caption);
+            const cap = document.createElement('div'); cap.className='text'; cap.textContent = msg.message;
+            photoWrap.appendChild(cap);
           }
-          bubble.appendChild(photoDiv);
+          bubble.appendChild(photoWrap);
         } else {
-          // parse for @pings and highlight
-          const textDiv = document.createElement('div'); textDiv.className = 'text';
-          let content = msg.message || msg.text || msg.content || '';
-          // replace @name occurrences with highlighted spans
-          content = escapeHtml(content).replace(/@([A-Za-z0-9_]{1,8})/g, (m, p1)=>{
-            // highlight if matches a known username (basic)
-            return `<span class="atMention" data-name="${p1}" style="color:var(--accent);font-weight:700">@${p1}</span>`;
-          });
-          textDiv.innerHTML = content;
-          bubble.appendChild(textDiv);
+          const text = document.createElement('div'); text.className='text';
+          let content = msg.message || msg.text || '';
+          // highlight mentions
+          content = escapeHtml(content).replace(/@([A-Za-z0-9_]{1,8})/g, (m,p1) => `<span style="color:var(--accent);font-weight:700">@${p1}</span>`);
+          text.innerHTML = content;
+          bubble.appendChild(text);
         }
 
-        // if the message contains a ping to current user, mark it
-        const lower = (msg.message||'').toLowerCase();
-        if(username && lower.includes('@'+username.toLowerCase())){
-          bubble.style.boxShadow = '0 8px 24px rgba(88,101,242,0.12)';
-          bubble.style.border = '1px solid rgba(88,101,242,0.18)';
-        }
-
-        container.appendChild(avatarWrap);
-        container.appendChild(bubble);
-
-        return container;
+        row.appendChild(avatar); row.appendChild(bubble);
+        return row;
       }
 
       function isAtBottom(){ return messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 120; }
       function scrollToBottom(){ requestAnimationFrame(()=> messagesEl.scrollTop = messagesEl.scrollHeight); }
 
+      /* fetch messages (polling) */
       async function fetchMessages(){
         if(!apiBase) return;
         try{
           const res = await fetch(apiBase);
-          if(!res.ok) throw new Error('Fetch failed: '+res.status);
+          if(!res.ok) throw new Error('Fetch failed');
           let data = await res.json();
-          if(!Array.isArray(data)) return;
-
-          data.sort((a,b)=>{
-            const ta = new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || (Number(a.id)||0);
-            const tb = new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || (Number(b.id)||0);
-            return ta-tb;
-          });
-
-          // Trim messages if over 200 (server prune)
-          if(data.length > 200){
-            const toDelete = data.slice(0, data.length - 120);
-            for(const msg of toDelete){
-              if(msg.id){
-                fetch(`${apiBase}/${msg.id}`, { method:'DELETE' }).catch(()=>{});
-              }
-            }
-          }
-
-          const wasAtBottom = isAtBottom();
+          if(!Array.isArray(data)) data = [];
+          data.sort((a,b)=> (new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || 0) - (new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || 0));
+          const wasBottom = isAtBottom();
           messagesEl.innerHTML = '';
           for(const m of data){
-            const el = renderMessage(m, username);
+            const el = renderMessage(m);
             if(el) messagesEl.appendChild(el);
           }
-          if(wasAtBottom) scrollToBottom();
-          setStatus('Connected — '+data.length+' messages');
-        }catch(e){ console.error(e); setStatus('Error fetching messages'); }
+          if(wasBottom) scrollToBottom();
+          setStatus('Connected — ' + data.length + ' messages');
+        }catch(e){ console.warn(e); setStatus('Error fetching'); }
       }
 
-      async function safeFetch(url, method='GET', body=null){
-        try{
-          const opts = { method, headers:{} };
-          if(body !== null){ opts.headers['Content-Type']='application/json'; opts.body = JSON.stringify(body); }
-          const r = await fetch(url, opts);
-          if(!r.ok) return null;
-          if(r.status === 204) return null;
-          return await r.json();
-        }catch(e){ console.warn('safeFetch', e); return null; }
-      }
-
-      // post message with support for replies, whispers, and @ pings
+      /* posting */
       async function postMessage(rawText){
         if(!rawText || !rawText.trim()) return;
         if(!username){ setStatus('Set username first'); return; }
-        if(isUserMuted(username)){ const rem = Math.ceil((muteMap.get(username)-Date.now())/1000); setStatus('You are muted. Remaining: '+rem+'s'); return; }
-        if(!apiBase){ setStatus('No channel selected'); return; }
-        if(containsBadWords(rawText)){ muteUser(username, 120); setStatus('Forbidden words detected. You are muted for 2 minutes.'); return; }
-
-        isSending = true;
-        sendBtn.disabled = true;
+        if(containsBadWords(rawText)){ setStatus('Forbidden words detected. Message blocked.'); return; }
 
         let privateTo = null;
         let messageText = rawText.trim();
         if(messageText.toLowerCase().startsWith('/w ')){
           const m = messageText.match(/^\/w\s+(\S+)\s+([\s\S]+)$/i);
-          if(m){ privateTo = m[1]; messageText = m[2]; if(!messageText){ setStatus('Whisper requires text'); isSending=false; sendBtn.disabled=false; return; } }
-          else { setStatus('Whisper format: /w name text'); isSending=false; sendBtn.disabled=false; return; }
+          if(m){ privateTo = m[1]; messageText = m[2]; } else { setStatus('Whisper format: /w name text'); return; }
         }
 
-        // Attach reply metadata if replying
-        let replyMeta = null;
-        if(replyToMessage){
-          replyMeta = { name: replyToMessage.username || replyToMessage.name, message: replyToMessage.message || replyToMessage.text };
-        }
-
-        const payload = { username, message: messageText, createdAt: new Date().toISOString(), nameColor, privateTo: privateTo || null, isPrivate: !!privateTo, replyTo: replyMeta, avatar: avatarDataUrl || null };
-
-        const optimistic = renderMessage(payload, username);
+        const payload = { username, message: messageText, createdAt: new Date().toISOString(), nameColor, privateTo: privateTo || null, avatar: avatarDataUrl || null };
+        // optimistic render
+        const optimistic = renderMessage(payload);
         if(optimistic) messagesEl.appendChild(optimistic);
         scrollToBottom();
 
         try{
-          const res = await fetch(apiBase, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          if(!res.ok) throw new Error('Send failed: '+res.status);
-          // reset reply
-          clearReplyTo();
+          const r = await fetch(apiBase, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          if(!r.ok) throw new Error('Send failed');
           await fetchMessages();
-        }catch(e){ console.error(e); setStatus('Failed to send'); }
-        finally{ isSending = false; sendBtn.disabled = false; }
+        }catch(e){ console.warn(e); setStatus('Failed to send'); }
       }
 
-      async function uploadPhoto(file){
+      /* upload photo: user requested big photos allowed (we will NOT downscale unless >4MB to avoid browser crashes) */
+      async function uploadPhotoFile(file){
         if(!file) return;
-        if(!username){ setStatus('Set username first'); return; }
-        if(isUserMuted(username)){ setStatus('You are muted and cannot upload'); return; }
-        if(containsBadWords(file.name)){ muteUser(username, 120); setStatus('Forbidden file name. You are muted for 2 minutes.'); return; }
-
-        isSending = true;
-        uploadPhotoBtn.disabled = true;
-
+        if(containsBadWords(file.name)){ setStatus('Forbidden file name'); return; }
         try{
-          // If GIF and large, keep as-is if small; otherwise resize (note: resizing GIF will lose animation)
-          let dataUrl;
-          if(file.type === 'image/gif'){
-            // If > 1.2MB, attempt to convert to static still by resizing (best-effort)
-            if(file.size > 1200000){
-              dataUrl = await resizeImageFile(file, 1000, 1000);
-            } else {
-              // read directly
-              dataUrl = await new Promise((res, rej)=>{
-                const r = new FileReader();
-                r.onload = e=>res(e.target.result); r.onerror = ()=>rej('gif read failed'); r.readAsDataURL(file);
-              });
-            }
-          } else {
-            dataUrl = await resizeImageFile(file, 1280, 1280);
-          }
-
-          const payload = { username, createdAt: new Date().toISOString(), nameColor, imageUrl: dataUrl, message: '', avatar: avatarDataUrl || null };
-          const res = await fetch(CHANNELS.photos, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          if(!res.ok) throw new Error('Upload failed: '+res.status);
-          setStatus('Photo uploaded');
-          photoInput.value = '';
-          await fetchMessages();
-        }catch(e){ console.error(e); setStatus('Photo upload failed: '+(e||'')); }
-        finally{ isSending = false; uploadPhotoBtn.disabled = false; }
-      }
-
-      // players (leaderboard)
-      function normalizePlayerName(p){ return p.name || p.username || p.nick || p.displayName || (p.id?String(p.id):String(p)); }
-      function detectPlayerOnline(p){ try{ if(p.lastSeen){ const last = Date.parse(p.lastSeen); if(!isNaN(last) && (Date.now() - last) <= PLAYER_OFFLINE_THRESHOLD_MS) return true; } }catch(e){} return false; }
-
-      async function fetchPlayers(){
-        try{
-          const res = await fetch(PLAYERS_API);
-          if(!res.ok) throw new Error('Players fetch failed: '+res.status);
-          const data = await res.json();
-          if(!Array.isArray(data)){ playersStatusEl.textContent='No players'; playersListEl.innerHTML=''; return; }
-          const online = [], offline = [];
-          for(const p of data){
-            const name = normalizePlayerName(p);
-            const on = detectPlayerOnline(p);
-            if(on) online.push({name, raw:p});
-            else offline.push({name, raw:p});
-          }
-          // ensure local user present
-          if(username){
-            const existsOnline = online.some(x=>x.name===username);
-            const existsOffline = offline.some(x=>x.name===username);
-            if(!existsOnline && !existsOffline) online.unshift({ name:username, raw:{ name:username, lastSeen:new Date().toISOString(), nameColor, state:'online' } , local:true });
-          }
-
-          playersListEl.innerHTML = '';
-          const headerOnline = document.createElement('div'); headerOnline.style.color='var(--muted)'; headerOnline.style.fontSize='13px'; headerOnline.textContent = 'Online ('+online.length+')';
-          playersListEl.appendChild(headerOnline);
-          for(const p of online){
-            const item = document.createElement('div'); item.className='player online';
-            const left = document.createElement('div'); left.style.display='flex'; left.style.alignItems='center';
-            const dot = document.createElement('span'); dot.className='statusDot';
-            const nameSpan = document.createElement('div'); nameSpan.className='playerName';
-            nameSpan.innerHTML = escapeHtml(p.name) + (p.local ? ' <span style="font-size:12px;color:var(--muted)">(you)</span>' : '');
-            const serverColor = (p.raw && (p.raw.nameColor || p.raw.color)) ? (p.raw.nameColor || p.raw.color) : null;
-            if(serverColor) nameSpan.style.color = serverColor;
-            else if(p.local && nameColor) nameSpan.style.color = nameColor;
-            left.appendChild(dot); left.appendChild(nameSpan);
-            const right = document.createElement('div'); right.style.fontSize='12px'; right.style.color='var(--muted)'; 
-            // if the server has a 'state' property use it: online/idle/offline
-            right.textContent = p.raw && p.raw.state === 'idle' ? 'idle' : 'online';
-            if(p.raw && p.raw.state === 'idle') item.className = 'player idle';
-            item.appendChild(left); item.appendChild(right);
-            playersListEl.appendChild(item);
-          }
-
-          const spacer = document.createElement('div'); spacer.style.height='8px'; playersListEl.appendChild(spacer);
-
-          const headerOff = document.createElement('div'); headerOff.style.color='var(--muted)'; headerOff.style.fontSize='13px'; headerOff.textContent = 'Offline ('+offline.length+')';
-          playersListEl.appendChild(headerOff);
-          for(const p of offline){
-            const item = document.createElement('div'); item.className='player offline';
-            const left = document.createElement('div'); left.style.display='flex'; left.style.alignItems='center';
-            const dot = document.createElement('span'); dot.className='statusDot';
-            const nameSpan = document.createElement('div'); nameSpan.className='playerName'; nameSpan.textContent = p.name;
-            const serverColor = (p.raw && (p.raw.nameColor || p.raw.color)) ? (p.raw.nameColor || p.raw.color) : null;
-            if(serverColor) nameSpan.style.color = serverColor;
-            left.appendChild(dot); left.appendChild(nameSpan);
-            const right = document.createElement('div'); right.style.fontSize='12px'; right.style.color='var(--muted)'; right.textContent='offline';
-            item.appendChild(left); item.appendChild(right);
-            playersListEl.appendChild(item);
-          }
-          playersStatusEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
-        }catch(e){ console.error(e); playersStatusEl.textContent='Error loading players'; playersListEl.innerHTML=''; }
-      }
-
-      async function upsertLocalPlayer(){
-        if(!username) return;
-        try{
-          const res = await fetch(PLAYERS_API);
-          if(!res.ok) throw new Error('Players fetch failed: '+res.status);
-          const data = await res.json();
-          if(!Array.isArray(data)) return;
-          const found = data.find(p => normalizePlayerName(p) === username);
-          const now = new Date().toISOString();
-          if(found){
-            localPlayerId = found.id;
-            localStorage.setItem('notcord_playerId', localPlayerId);
-            await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', {...found, name: username, lastSeen: now, nameColor, avatar: avatarDataUrl, state: 'online' });
-          } else {
-            const created = await safeFetch(PLAYERS_API, 'POST', { name: username, lastSeen: now, nameColor, avatar: avatarDataUrl, state: 'online' });
-            if(created && created.id){ localPlayerId = created.id; localStorage.setItem('notcord_playerId', localPlayerId); }
-          }
-        }catch(e){ console.warn('upsertLocalPlayer', e); } finally{ fetchPlayers().catch(()=>{}); }
-      }
-
-      // send online/idle state
-      async function setLocalPlayerState(state){
-        if(!localPlayerId) return;
-        try{
-          const cur = await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'GET', null);
-          if(!cur) return;
-          const updated = { ...cur, online: state === 'online', lastSeen: new Date().toISOString(), name: username || cur.name, nameColor: nameColor || cur.nameColor, state };
-          await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', updated);
-        }catch(e){ console.warn('setLocalPlayerState', e); } finally{ fetchPlayers().catch(()=>{}); }
-      }
-
-      // heartbeat to report online status
-      function startHeartbeat(){
-        stopHeartbeat();
-        if(!username || !localPlayerId) return;
-        heartbeatInterval = setInterval(async ()=>{
-          try{ await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { lastSeen: new Date().toISOString(), online:true, name: username, nameColor, avatar: avatarDataUrl, state:'online' }); }catch(e){ console.warn('heartbeat', e); }
-        }, HEARTBEAT_MS);
-      }
-      function stopHeartbeat(){ if(heartbeatInterval){ clearInterval(heartbeatInterval); heartbeatInterval = null; } }
-
-      // Modified fetchMessages to include avatar if present
-      async function fetchMessages(){
-        if(!apiBase) return;
-        try{
-          const res = await fetch(apiBase);
-          if(!res.ok) throw new Error('Fetch failed: '+res.status);
-          let data = await res.json();
-          if(!Array.isArray(data)) return;
-          data.sort((a,b)=>{
-            const ta = new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || (Number(a.id)||0);
-            const tb = new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || (Number(b.id)||0);
-            return ta-tb;
+          setStatus('Preparing photo...');
+          const dataUrl = await new Promise((res,rej)=>{
+            const r = new FileReader();
+            r.onload = e => res(e.target.result);
+            r.onerror = () => rej('read fail');
+            r.readAsDataURL(file);
           });
-          const wasAtBottom = isAtBottom();
-          messagesEl.innerHTML = '';
-          for(const m of data){ const el = renderMessage(m, username); if(el) messagesEl.appendChild(el); }
-          if(wasAtBottom) scrollToBottom();
-          setStatus('Connected — '+data.length+' messages');
-        }catch(e){ console.error(e); setStatus('Error fetching messages'); }
+          // If overly large (>4MB) downscale to avoid huge payloads (best-effort)
+          let finalData = dataUrl;
+          if(finalData.length > 4 * 1024 * 1024){
+            // try to downscale to 1920x1920
+            const img = new Image();
+            const p = new Promise((resolve, reject)=>{
+              img.onload = ()=>{
+                const w = img.width, h = img.height;
+                const ratio = Math.min(1920/w, 1920/h, 1);
+                const cw = Math.round(w*ratio), ch = Math.round(h*ratio);
+                const canvas = document.createElement('canvas'); canvas.width = cw; canvas.height = ch;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img,0,0,cw,ch);
+                resolve(canvas.toDataURL('image/jpeg', 0.9));
+              };
+              img.onerror = ()=> reject('image load fail');
+              img.src = dataUrl;
+            });
+            finalData = await p;
+          }
+
+          const payload = { username, createdAt: new Date().toISOString(), nameColor, imageUrl: finalData, message: '', avatar: avatarDataUrl || null };
+          const r = await fetch(CHANNELS.photos, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          if(!r.ok) throw new Error('upload failed');
+          setStatus('Photo uploaded');
+          await fetchMessages();
+        }catch(e){ console.warn(e); setStatus('Photo upload failed'); }
       }
 
-      // reply management
-      function setReplyTo(message){
-        replyToMessage = message;
-        replyPreview.style.display = 'block';
-        replyPreview.innerHTML = `<div class="replyBox"><strong>${escapeHtml(message.username||message.name||'Unknown')}</strong> — ${(escapeHtml((message.message||message.text||'')).slice(0,120))} <button id="cancelReply" class="smallBtn">Esc</button></div>`;
-        document.getElementById('cancelReply').onclick = clearReplyTo;
+      /* reply handling */
+      let replyTo = null;
+      const replyPreview = document.createElement('div');
+      replyPreview.style.display='none';
+      replyPreview.style.padding='8px';
+      replyPreview.style.background='rgba(255,255,255,0.02)';
+      replyPreview.style.borderRadius='8px';
+      replyPreview.style.margin='8px 16px';
+      document.querySelector('.chatCard').insertBefore(replyPreview, document.querySelector('#messages'));
+
+      function setReplyTo(msg){
+        replyTo = msg;
+        replyPreview.style.display='block';
+        replyPreview.innerHTML = `<strong>${escapeHtml(msg.username || msg.name || 'Unknown')}</strong> — ${(escapeHtml((msg.message||msg.text||'')).slice(0,140))} <button id="cancelReply" class="smallBtn">Esc</button>`;
+        document.getElementById('cancelReply').onclick = clearReply;
         messageInput.focus();
       }
-      function clearReplyTo(){
-        replyToMessage = null;
-        replyPreview.style.display = 'none';
+      function clearReply(){
+        replyTo = null;
+        replyPreview.style.display='none';
         replyPreview.innerHTML = '';
-        messageInput.placeholder = 'Message (Shift+Enter for newline)';
       }
 
-      // event wiring
-      channelsEl.addEventListener('click', (e)=>{
-        const ch = e.target.closest('.channel');
-        if(!ch) return;
-        setActiveChannel(ch.dataset.id).catch(()=>{});
+      /* event wiring */
+      messageInput.addEventListener('input', ()=>{
+        const v = messageInput.value || '';
+        if(v.length > MAX_CHARS) messageInput.value = v.slice(0, MAX_CHARS);
+        charCountEl.textContent = `${messageInput.value.length} / ${MAX_CHARS}`;
+        const can = (messageInput.value||'').trim().length > 0 && username;
+        sendBtn.disabled = !can;
       });
 
-      setNameBtn.addEventListener('click', async ()=>{
-        let val = usernameInput.value.trim();
-        if(!val) val = 'Guest' + Math.floor(Math.random()*9000+1000);
-        // enforce 8-char limit (already via maxlength), show changed timestamp prevention
-        const now = Date.now();
-        const oneWeek = 7*24*60*60*1000;
-        if(nameChangedAt && now - nameChangedAt < oneWeek){
-          const remaining = Math.ceil((oneWeek - (now - nameChangedAt)) / (1000*60*60*24));
-          alert('You can change your name only once per week. Remaining days: '+remaining);
-          return;
-        }
-
-        username = val;
-        localStorage.setItem('notcord_username', username);
-        nameChangedAt = now;
-        localStorage.setItem('notcord_name_changed', String(nameChangedAt));
-        usernameBox.style.display = 'none'; usernameLocked.style.display = 'flex'; usernameDisplay.textContent = username;
-        document.getElementById('nameChangeInfo').textContent = 'You can change name in 7 days';
-        await upsertLocalPlayer(); await setLocalPlayerState('online'); startHeartbeat(); await fetchPlayers(); updateCharCountAndState();
+      messageInput.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendBtn.click(); }
+        if(e.key === 'Escape' && replyTo){ clearReply(); }
       });
 
       sendBtn.addEventListener('click', ()=>{
         const txt = messageInput.value;
-        postMessage(txt);
-        messageInput.value = ''; updateCharCountAndState();
-        const map = readTypingMap(); if(map[activeChannel] && map[activeChannel][username]){ delete map[activeChannel][username]; writeTypingMap(map); updateTypingUI(); }
-      });
-
-      messageInput.addEventListener('input', ()=>{
-        updateCharCountAndState();
-        if(username){
-          const map = readTypingMap(); map[activeChannel] = map[activeChannel] || {}; map[activeChannel][username] = Date.now(); writeTypingMap(map); updateTypingUI();
+        if(replyTo){
+          // attach reply metadata
+          const metaText = txt + ' ';
+          postMessage(metaText); // server-side reply included not implemented fully on mock; kept simple
+          clearReply();
+        } else {
+          postMessage(txt);
         }
+        messageInput.value = ''; messageInput.dispatchEvent(new Event('input'));
       });
 
-      messageInput.addEventListener('keydown', (e)=>{ 
-        if(e.key==='Escape'){ // ESC cancels reply
-          if(replyToMessage){ clearReplyTo(); e.stopPropagation(); return; }
+      attachBtn.addEventListener('click', ()=> photoInput.click());
+      photoInput.addEventListener('change', ()=> {
+        if(photoInput.files && photoInput.files[0]) uploadPhotoFile(photoInput.files[0]);
+        photoInput.value = '';
+      });
+
+      /* emoji picker */
+      function showEmojiPicker(){
+        if(emojiPickerEl){
+          emojiPickerEl.remove(); emojiPickerEl = null; return;
         }
-        if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); if(!sendBtn.disabled) sendBtn.click(); } 
+        emojiPickerEl = document.createElement('div'); emojiPickerEl.className='emojiPicker';
+        EMOJIS.forEach(e => {
+          const it = document.createElement('div'); it.className='emojiItem'; it.textContent = e;
+          it.onclick = ()=> { insertAtCursor(messageInput, e); emojiPickerEl.remove(); emojiPickerEl = null; messageInput.focus(); messageInput.dispatchEvent(new Event('input')); };
+          emojiPickerEl.appendChild(it);
+        });
+        // position near button
+        const rect = emojiBtn.getBoundingClientRect();
+        emojiPickerEl.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+        emojiPickerEl.style.left = (rect.left + window.scrollX - 10) + 'px';
+        document.body.appendChild(emojiPickerEl);
+      }
+      emojiBtn.addEventListener('click', showEmojiPicker);
+      document.addEventListener('click', (e)=> { if(emojiPickerEl && !emojiPickerEl.contains(e.target) && e.target !== emojiBtn) { emojiPickerEl.remove(); emojiPickerEl = null; } });
+
+      function insertAtCursor(textarea, text){
+        const start = textarea.selectionStart || 0;
+        const end = textarea.selectionEnd || 0;
+        const before = textarea.value.substring(0, start);
+        const after = textarea.value.substring(end);
+        textarea.value = before + text + after;
+        const newPos = start + text.length;
+        textarea.selectionStart = textarea.selectionEnd = newPos;
+      }
+
+      /* username / avatar management */
+      setNameBtn.addEventListener('click', async ()=>{
+        let val = (usernameInput.value || '').trim();
+        if(!val) val = 'Guest' + Math.floor(Math.random()*9000+1000);
+        const now = Date.now();
+        if(nameChangedAt && now - nameChangedAt < ONE_WEEK_MS){
+          alert('You can change your name once per week.');
+          return;
+        }
+        username = val;
+        localStorage.setItem('notcord_username', username);
+        nameChangedAt = now; localStorage.setItem('notcord_name_changed', String(nameChangedAt));
+        setStatus('Name set: ' + username);
       });
 
-      photoInput.addEventListener('change', ()=> uploadPhotoBtn.disabled = !photoInput.files.length );
-      uploadPhotoBtn.addEventListener('click', ()=> { if(photoInput.files.length) uploadPhoto(photoInput.files[0]); });
-
-      nameColorInput.addEventListener('input', async (e)=>{ nameColor = e.target.value; localStorage.setItem('notcord_nameColor', nameColor); if(localPlayerId) await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { name: username, lastSeen: new Date().toISOString(), nameColor, avatar: avatarDataUrl }); Array.from(document.querySelectorAll('.meta .name')).forEach(el=>{ if(el.textContent===username) el.style.color = nameColor; }); fetchPlayers().catch(()=>{}); });
-      resetNameColorBtn.addEventListener('click', ()=>{ nameColor='#ffcc00'; nameColorInput.value = nameColor; localStorage.setItem('notcord_nameColor', nameColor); });
-
-      // avatar upload/change once/week
       changeAvatarBtn.addEventListener('click', async ()=>{
-        if(!avatarInput.files.length){ alert('Choose an image file'); return; }
+        if(!avatarInput.files.length){ alert('Choose image first'); return; }
         const file = avatarInput.files[0];
         const now = Date.now();
-        const oneWeek = 7*24*60*60*1000;
-        if(avatarChangedAt && now - avatarChangedAt < oneWeek){
-          const remaining = Math.ceil((oneWeek - (now - avatarChangedAt)) / (1000*60*60*24));
-          alert('You can change your avatar only once per week. Remaining days: '+remaining);
+        if(avatarChangedAt && now - avatarChangedAt < ONE_WEEK_MS){
+          alert('You can change avatar once per week.');
           return;
         }
         try{
-          const mini = await resizeImageFile(file, 256, 256);
-          avatarDataUrl = mini;
+          const dataUrl = await new Promise((res,rej)=>{
+            const fr = new FileReader();
+            fr.onload = e => res(e.target.result);
+            fr.onerror = ()=> rej('read failed');
+            fr.readAsDataURL(file);
+          });
+          avatarDataUrl = dataUrl;
           avatarChangedAt = now;
           localStorage.setItem('notcord_avatar', avatarDataUrl);
           localStorage.setItem('notcord_avatar_changed', String(avatarChangedAt));
           userAvatarEl.innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`;
-          avatarInput.value = '';
-          if(localPlayerId) await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { name: username, avatar: avatarDataUrl, lastSeen: new Date().toISOString(), nameColor });
-        }catch(e){ alert('Avatar upload failed: '+(e||'')); }
+          setStatus('Avatar updated');
+        }catch(e){ console.warn(e); setStatus('Avatar upload failed'); }
       });
 
-      emojiBtn.addEventListener('click', ()=>{
-        // quick GIF picker: open file selector for GIFs
-        photoUploadWrapper.style.display = 'flex';
-        inputWrapper.style.display = 'none';
+      nameColorInput.addEventListener('input', ()=>{
+        nameColor = nameColorInput.value;
+        localStorage.setItem('notcord_nameColor', nameColor);
+        setStatus('Name color updated');
       });
 
-      function updateCharCountAndState(){
-        let val = messageInput.value || '';
-        if(val.length > MAX_CHARS) messageInput.value = val.slice(0, MAX_CHARS);
-        charCountEl.textContent = `${(messageInput.value||'').length} / ${MAX_CHARS}`;
-        const canSend = username && (messageInput.value||'').trim().length > 0 && activeChannel !== 'photos' && !isSending && !isUserMuted(username);
-        sendBtn.disabled = !canSend;
+      /* theme buttons */
+      themeButtons.forEach(btn => {
+        btn.addEventListener('click', ()=> { applyTheme(btn.getAttribute('data-theme')); });
+      });
+      // initialize theme
+      const savedTheme = Number(localStorage.getItem('notcord_theme') || 1);
+      applyTheme(savedTheme);
+
+      /* players fetch (no idle tracking) */
+      async function fetchPlayers(){
+        try{
+          const res = await fetch(PLAYERS_API);
+          if(!res.ok) throw new Error('players fetch failed');
+          const data = await res.json();
+          const list = document.getElementById('playersList'); list.innerHTML = '';
+          if(Array.isArray(data)){
+            data.forEach(p => {
+              const el = document.createElement('div'); el.className='player';
+              const dot = document.createElement('div'); dot.className='dot';
+              const name = document.createElement('div'); name.textContent = p.name || p.username || ('#'+(p.id||''));
+              el.appendChild(dot); el.appendChild(name);
+              list.appendChild(el);
+            });
+          }
+        }catch(e){ console.warn(e); }
       }
 
-      function updateInputArea(){
-        if(activeChannel === 'photos'){
-          inputWrapper.style.display = 'none';
-          photoUploadWrapper.style.display = 'flex';
-          uploadPhotoBtn.disabled = true;
-        } else {
-          photoUploadWrapper.style.display = 'none';
-          inputWrapper.style.display = 'flex';
-        }
-      }
-
-      // active channel setter
-      async function setActiveChannel(id){
-        activeChannel = id; apiBase = CHANNELS[id] || null; localStorage.setItem('notcord_channel', id);
-        Array.from(channelsEl.children).forEach(ch => ch.classList.toggle('active', ch.dataset.id === id));
-        channelTitleEl.textContent = '# ' + id;
-        updateInputArea();
+      /* polling */
+      async function startPolling(){
         if(polling) clearInterval(polling);
         await fetchMessages();
         polling = setInterval(fetchMessages, 4000);
+        fetchPlayers();
+        setInterval(fetchPlayers, 8000);
       }
 
-      function cleanupTypingMap(){
-        const map = readTypingMap(); const now = Date.now(); let changed = false;
-        for(const ch of Object.keys(map)){ for(const u of Object.keys(map[ch])){ if(now - map[ch][u] > TYPING_EXPIRE_MS){ delete map[ch][u]; changed = true; } } if(Object.keys(map[ch]).length===0) delete map[ch]; }
-        if(changed) writeTypingMap(map);
-        updateTypingUI();
-      }
+      /* reply attach support when posting is used; simple because mockapi won't store nested replies reliably */
+      // Note: reply metadata will be attached client-side only in optimistic render.
 
-      // visibility + idle detection
-      let idleTimeout = null;
-      const IDLE_MS = 60000; // 1 minute of inactivity -> idle
-      function markIdle(){
-        if(!username || !localPlayerId) return;
-        setLocalPlayerState('idle').catch(()=>{});
-      }
-      function markActive(){
-        if(!username || !localPlayerId) return;
-        setLocalPlayerState('online').catch(()=>{});
-      }
-      function resetIdleTimer(){
-        if(idleTimeout) clearTimeout(idleTimeout);
-        idleTimeout = setTimeout(markIdle, IDLE_MS);
-        markActive();
-      }
-      ['mousemove','keydown','click','scroll'].forEach(ev => window.addEventListener(ev, resetIdleTimer));
-      document.addEventListener('visibilitychange', async ()=>{
-        if(!username) return;
-        if(document.hidden){
-          // browser hidden -> may still be online but mark idle (yellow)
-          await setLocalPlayerState('idle');
-          stopHeartbeat();
-        } else {
-          await upsertLocalPlayer();
-          startHeartbeat();
-          resetIdleTimer();
-        }
-      });
-
-      // ESC global handler to clear reply
-      window.addEventListener('keydown', (e)=>{
-        if(e.key === 'Escape' && replyToMessage){ clearReplyTo(); }
-      });
-
-      // init
-      async function init(){
-        applyTheme(); initializeAppearanceInputs();
-        pinned = JSON.parse(localStorage.getItem('notcord_pins') || '[]');
+      /* initialization */
+      function init(){
+        if(username) usernameInput.value = username;
+        if(nameColor) nameColorInput.value = nameColor;
+        if(avatarDataUrl) userAvatarEl.innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`;
         renderPinned();
-
-        if(username){
-          usernameBox.style.display='none'; usernameLocked.style.display='flex'; usernameDisplay.textContent = username;
-          if(avatarDataUrl){ userAvatarEl.innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`; } else { avatarInitials.textContent = (username||'G').slice(0,1).toUpperCase(); }
-          const now = Date.now();
-          const oneWeek = 7*24*60*60*1000;
-          if(nameChangedAt && now - nameChangedAt < oneWeek){
-            document.getElementById('nameChangeInfo').textContent = 'You can change name in ' + Math.ceil((oneWeek - (now - nameChangedAt))/(1000*60*60*24)) + ' days';
-          }
-          await upsertLocalPlayer(); await setLocalPlayerState('online'); startHeartbeat();
-        } else { usernameBox.style.display='flex'; usernameLocked.style.display='none'; }
-
-        await setActiveChannel(activeChannel); await fetchPlayers(); if(playersPolling) clearInterval(playersPolling); playersPolling = setInterval(fetchPlayers, 5000);
-        setInterval(cleanupTypingMap, 2000);
-        setStatus('Connected (polling every 4s)');
-        resetIdleTimer();
+        startPolling();
+        setStatus('Connected (polling)');
+        // wire initial charcount
+        messageInput.dispatchEvent(new Event('input'));
       }
       init();
 
-      // expose for debug
-      window._notcord = { muteMap, fetchMessages, fetchPlayers, pinned };
+      // Expose for debugging
+      window._notcord = { fetchMessages, fetchPlayers, pinned };
 
     })();
   </script>
