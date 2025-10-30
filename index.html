@@ -3,569 +3,608 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>notcord — refreshed UI</title>
+  <title>notcord — updated UI</title>
   <style>
     :root{
-      --bg-a: #071226;   /* theme 1 */
-      --bg-b: #07101a;   /* theme 2 */
-      --accent: #5865f2;
+      --bg-1: #071226; /* theme1 */
+      --bg-2: #07101a; /* theme2 */
+      --bg-3: #0b2233; /* theme3 (chat bubble) */
       --muted: #9aa4b2;
-      --card: #0b2233;
+      --accent: #5865f2;
       --text: #e6eef6;
-      --me-bg: #22303a;
+      --card: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.06);
       --pin-bg: rgba(88,101,242,0.12);
     }
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Helvetica,Arial;color:var(--text);background:linear-gradient(180deg,var(--bg-a),var(--bg-b));-webkit-font-smoothing:antialiased}
-    /* New layout: left compact server / center chat / right members collapsed section */
-    .app{height:100vh;display:grid;grid-template-columns:80px 1fr 280px;gap:12px;padding:12px;align-items:stretch}
-    /* server column */
-    .servers{background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px;align-items:center;border:1px solid rgba(255,255,255,0.04)}
-    .serverBtn{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;background:transparent;border:1px solid transparent;color:var(--text);cursor:pointer}
-    .serverBtn.active{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.04)}
-    /* main chat card */
-    .chatCard{border-radius:12px;padding:0;display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(255,255,255,0.04);background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
-    .chatHeader{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.03);background:linear-gradient(90deg, rgba(255,255,255,0.01), transparent)}
-    .chatHeader .title{font-weight:800;font-size:18px}
-    .chatHeader .subtitle{color:var(--muted);font-size:13px}
-    .messages{flex:1;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:12px;min-height:0}
-    .messageRow{display:flex;gap:12px;align-items:flex-start}
-    .messageRow.me{flex-direction:row-reverse}
-    .avatar{width:44px;height:44px;border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--text);overflow:hidden;flex-shrink:0}
-    .avatar img{width:100%;height:100%;object-fit:cover}
-    .bubble{max-width:78%;padding:10px 12px;border-radius:12px;background:var(--card);box-shadow:0 6px 18px rgba(2,6,23,0.45);color:var(--text);display:flex;flex-direction:column;gap:8px}
-    .messageRow.me .bubble{background:var(--me-bg)}
-    .meta{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
-    .meta .name{font-weight:700}
-    .controls{display:flex;gap:6px;margin-left:auto}
-    .smallBtn{background:transparent;border:1px solid rgba(255,255,255,0.03);padding:6px 8px;border-radius:8px;color:var(--muted);cursor:pointer}
-    .pinnedBar{padding:10px;border-bottom:1px solid rgba(255,255,255,0.02);display:flex;gap:8px;align-items:center;background:linear-gradient(180deg, rgba(88,101,242,0.03), transparent)}
-    .pinChip{background:var(--pin-bg);padding:6px 10px;border-radius:10px;font-size:13px;color:var(--text);display:flex;gap:8px;align-items:center}
-    .inputArea{padding:12px;border-top:1px solid rgba(255,255,255,0.03);display:flex;gap:8px;align-items:flex-end;background:linear-gradient(180deg, transparent, rgba(0,0,0,0.02))}
-    .textInput{flex:1;min-height:56px;max-height:320px;padding:12px;border-radius:12px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--text);outline:none;resize:none}
-    .sendBtn{background:var(--accent);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700}
-    .sendBtn:disabled{opacity:0.6;cursor:default}
-    .toolbar{display:flex;gap:8px;align-items:center}
-    /* right panel */
-    .rightPanel{border-radius:12px;padding:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:12px}
-    .sectionTitle{font-size:13px;color:var(--muted);font-weight:700}
-    .player{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.01)}
-    .player .dot{width:10px;height:10px;border-radius:50%;background:#39d353;box-shadow:0 0 8px rgba(57,211,83,0.08)}
-    .themes{display:flex;gap:8px;align-items:center}
-    .themeBtn{padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);cursor:pointer;color:var(--muted);background:transparent}
-    /* emoji picker */
-    .emojiPicker{position:absolute;z-index:60;background:rgba(0,0,0,0.8);padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:grid;grid-template-columns:repeat(8,28px);gap:6px}
-    .emojiItem{cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
-    /* photos */
-    .photoMessage img{max-width:100%;height:auto;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.45);cursor:pointer}
-    /* responsive */
-    @media (max-width:980px){ .app{grid-template-columns:64px 1fr 200px} .rightPanel{display:none} }
-    @media (max-width:720px){ .app{grid-template-columns:64px 1fr} .rightPanel{display:none} }
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, Roboto, Helvetica, Arial;color:var(--text);
+      background: linear-gradient(180deg,var(--bg-1),var(--bg-2));
+      -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+    }
+
+    /* layout - different look: tall left column, compact right, airy middle */
+    .app { display:grid; grid-template-columns:260px 1fr 300px; gap:10px; padding:12px; height:100vh; }
+    .panel { border-radius:12px; background:var(--card); border:1px solid var(--border); padding:12px; overflow:hidden; display:flex; flex-direction:column; }
+    .left { min-width:260px; }
+    .right { min-width:260px; }
+
+    /* Header */
+    .brand { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+    .logo { width:44px; height:44px; border-radius:10px; background:linear-gradient(180deg,var(--bg-3),#072d3b); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; color:var(--text); box-shadow:0 8px 30px rgba(0,0,0,0.45); }
+    .brand .title { font-weight:800; font-size:18px; letter-spacing:0.4px; }
+
+    /* user box */
+    .userBox { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+    .userAvatar { width:48px; height:48px; border-radius:12px; overflow:hidden; background:linear-gradient(180deg,#0d3b48,#07202a); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--text); flex-shrink:0; }
+    .userMeta { display:flex; flex-direction:column; gap:4px; }
+    .userMeta .name{ font-weight:700; }
+    .userMeta .sub{ color:var(--muted); font-size:13px; }
+
+    /* channels */
+    .channels { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+    .channel { padding:10px; border-radius:10px; cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--muted); font-weight:700; }
+    .channel.active { background:linear-gradient(90deg, rgba(88,101,242,0.12), rgba(88,101,242,0.02)); color:var(--text); border:1px solid rgba(88,101,242,0.08); }
+
+    /* theme selector */
+    .themeRow { display:flex; gap:8px; align-items:center; margin-top:auto; }
+    .themeBtn { width:36px; height:28px; border-radius:8px; border:1px solid var(--border); cursor:pointer; }
+
+    /* main chat */
+    .chatHeader { display:flex; align-items:center; gap:10px; padding-bottom:8px; border-bottom:1px solid var(--border); margin-bottom:8px; }
+    .chatTitle { font-weight:800; font-size:18px; display:flex; gap:10px; align-items:center; }
+    .chatStatus { margin-left:auto; color:var(--muted); font-size:13px; }
+
+    .pinnedArea { display:flex; gap:8px; padding:8px; border-radius:10px; background:linear-gradient(180deg, rgba(88,101,242,0.03), transparent); margin-bottom:8px; overflow:auto; }
+    .pinChip { padding:6px 10px; border-radius:10px; background:var(--pin-bg); font-size:13px; display:flex; gap:8px; align-items:center; }
+
+    .messages { flex:1; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:12px; scrollbar-width:thin; }
+    .msgRow { display:flex; gap:10px; align-items:flex-start; max-width:900px; }
+    .msgRow.me { margin-left:auto; flex-direction:row-reverse; }
+    .msgAvatar { width:44px; height:44px; border-radius:10px; overflow:hidden; background:linear-gradient(180deg,#07313b,#0b2b3a); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--text); flex-shrink:0; }
+    .bubble { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:10px; max-width:720px; box-shadow:0 8px 30px rgba(2,6,23,0.5); position:relative; display:flex; flex-direction:column; gap:8px; }
+    .bubble .meta { display:flex; gap:8px; align-items:center; font-size:13px; color:var(--muted); }
+    .bubble .meta .name { font-weight:800; color:var(--text); }
+    .bubble .text { color:var(--text); white-space:pre-wrap; word-break:break-word; font-size:15px; }
+
+    /* image messages: allow large images; scale visually but allow click to open full */
+    .photoMessage img { width:100%; height:auto; border-radius:10px; cursor:pointer; display:block; max-width:880px; box-shadow:0 12px 40px rgba(0,0,0,0.6); object-fit:contain; }
+
+    /* input area */
+    .composer { border-top:1px solid var(--border); padding-top:8px; display:flex; gap:8px; align-items:flex-end; }
+    .composer textarea { flex:1; min-height:56px; max-height:260px; resize:none; padding:10px; border-radius:10px; background:transparent; border:1px solid var(--border); color:var(--text); outline:none; }
+    .composeActions { display:flex; flex-direction:column; gap:8px; align-items:flex-end; min-width:140px; }
+    .smallBtn { padding:8px 10px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; }
+    .sendBtn { padding:10px 12px; border-radius:9px; background:var(--accent); border:none; color:white; font-weight:700; cursor:pointer; }
+    .sendBtn:disabled{ opacity:0.6; cursor:default; }
+
+    /* right panel: players */
+    .playersList { display:flex; flex-direction:column; gap:8px; overflow:auto; }
+    .player { display:flex; align-items:center; gap:8px; padding:8px; border-radius:8px; background:transparent; border:1px solid transparent; }
+    .player .dot { width:12px; height:12px; border-radius:50%; background:#39d353; box-shadow:0 6px 20px rgba(57,211,83,0.12); flex-shrink:0; }
+
+    /* emoji picker (simple) */
+    .emojiPicker { position:absolute; bottom:90px; right:16px; background:var(--card); border:1px solid var(--border); padding:8px; border-radius:10px; display:flex; gap:6px; flex-wrap:wrap; width:260px; max-height:220px; overflow:auto; box-shadow:0 12px 40px rgba(0,0,0,0.45); }
+    .emojiBtn { cursor:pointer; font-size:20px; padding:6px; border-radius:6px; background:transparent; border:none; }
+
+    @media (max-width:980px){ .app{ grid-template-columns:220px 1fr 220px } }
+    @media (max-width:760px){ .app{ grid-template-columns:1fr; } .right,.left{ display:none } .emojiPicker{ right:8px; left:8px; } }
   </style>
 </head>
 <body>
-  <div class="app" id="app">
-    <div class="servers" aria-label="servers">
-      <button class="serverBtn active" title="notcord">N</button>
-      <button class="serverBtn" title="photos">P</button>
-      <button class="serverBtn" title="settings">S</button>
-    </div>
+  <div class="app">
+    <aside class="panel left">
+      <div class="brand">
+        <div class="logo">N</div>
+        <div class="title">notcord</div>
+      </div>
 
-    <main class="chatCard" id="chatCard">
+      <div class="userBox">
+        <div class="userAvatar" id="userAvatar">G</div>
+        <div class="userMeta">
+          <div class="name" id="usernameDisplay">Guest</div>
+          <div class="sub" id="nameInfo">Set name (max 8 chars)</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;gap:8px;">
+          <input id="usernameInput" maxlength="8" placeholder="8 chars max" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);" />
+          <button id="setNameBtn" class="smallBtn">Set</button>
+        </div>
+      </div>
+
+      <div class="channels" id="channels">
+        <div class="channel active" data-id="general"># general</div>
+        <div class="channel" data-id="photos"># photos</div>
+      </div>
+
+      <div style="margin-top:auto;">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Themes</div>
+        <div class="themeRow">
+          <button class="themeBtn" id="theme1" title="Theme 1" style="background:linear-gradient(180deg,#071226,#07101a)"></button>
+          <button class="themeBtn" id="theme2" title="Theme 2" style="background:linear-gradient(180deg,#07101a,#0b2233)"></button>
+          <button class="themeBtn" id="theme3" title="Theme 3" style="background:linear-gradient(180deg,#0b2233,#072d3b)"></button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:10px">You can change name and avatar once/week. Use @name to ping. Use /w name text to whisper.</div>
+        <div style="height:10px"></div>
+        <div>
+          <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">Avatar (upload)</label>
+          <input type="file" id="avatarInput" accept="image/*" style="width:100%" />
+          <button id="changeAvatarBtn" class="smallBtn" style="margin-top:8px">Upload Avatar</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="panel" style="position:relative;">
       <div class="chatHeader">
-        <div style="display:flex;gap:12px;align-items:center">
-          <div style="width:48px;height:48px;border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:center;font-weight:900">N</div>
-          <div>
-            <div class="title" id="channelTitle"># general</div>
-            <div class="subtitle" id="channelSubtitle">Welcome to notcord — use @name to mention</div>
-          </div>
-        </div>
-        <div style="flex:1"></div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div id="status" style="color:var(--muted);font-size:13px">Connecting...</div>
-        </div>
+        <div class="chatTitle"><div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(180deg,var(--bg-3),#072d3b);display:inline-flex;align-items:center;justify-content:center;font-weight:800">N</div> <div id="channelTitle"># general</div></div>
+        <div class="chatStatus" id="chatStatus">Connecting...</div>
       </div>
 
-      <div id="pinnedBar" class="pinnedBar" style="display:none">
-        <div style="font-size:13px;color:var(--muted)">Pinned</div>
-        <div id="pinnedList" style="display:flex;gap:8px;overflow:auto"></div>
-      </div>
+      <div id="pinnedBar" class="pinnedArea" style="display:none"></div>
 
-      <div id="messages" class="messages" role="log" aria-live="polite"></div>
+      <div class="messages" id="messages" aria-live="polite"></div>
 
-      <div class="inputArea" id="inputArea">
-        <textarea id="messageInput" class="textInput" placeholder="Message (Shift+Enter for newline)" maxlength="200"></textarea>
-        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
-          <div class="toolbar">
-            <button id="emojiBtn" class="smallBtn" title="Emoji">😊</button>
-            <button id="attachBtn" class="smallBtn" title="Attach photo">📎</button>
-            <input id="photoInput" type="file" accept="image/*,image/gif" style="display:none">
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <div style="font-size:12px;color:var(--muted)" id="charCount">0 / 200</div>
-            <button id="sendBtn" class="sendBtn" disabled>Send</button>
-          </div>
-        </div>
-      </div>
-    </main>
+      <div style="padding-top:8px">
+        <div id="replyPreview" style="display:none;margin-bottom:8px"></div>
 
-    <aside class="rightPanel" id="rightPanel">
-      <div>
-        <div class="sectionTitle">Appearance</div>
-        <div style="margin-top:8px" class="themes">
-          <button class="themeBtn" data-theme="1">Theme 1</button>
-          <button class="themeBtn" data-theme="2">Theme 2</button>
-          <button class="themeBtn" data-theme="3">Theme 3</button>
-        </div>
-      </div>
+        <div class="composer" id="composer">
+          <textarea id="messageInput" placeholder="Message (Shift+Enter = newline)" maxlength="200"></textarea>
 
-      <div>
-        <div class="sectionTitle">Profile</div>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-          <div id="userAvatar" class="avatar">G</div>
-          <div style="flex:1">
-            <input id="usernameInput" placeholder="username (max 8)" maxlength="8" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--text)" />
-            <div style="margin-top:6px;display:flex;gap:6px">
-              <button id="setNameBtn" class="smallBtn">Set</button>
-              <input id="nameColor" type="color" title="Name color" style="width:40px;height:32px;padding:0;border-radius:6px;border:none;background:transparent"/>
+          <div class="composeActions">
+            <div style="display:flex;gap:8px;">
+              <button id="emojiToggle" class="smallBtn">😀</button>
+              <button id="photoToggle" class="smallBtn">📷</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+              <div id="charCount" style="font-size:13px;color:var(--muted)">0 / 200</div>
+              <button id="sendBtn" class="sendBtn" disabled>Send</button>
             </div>
           </div>
         </div>
-        <div style="margin-top:8px">
-          <label style="font-size:12px;color:var(--muted)">Avatar (change once/week)</label>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <input id="avatarInput" type="file" accept="image/*" />
-            <button id="changeAvatarBtn" class="smallBtn">Upload</button>
-          </div>
+
+        <div id="photoUploadArea" style="margin-top:8px;display:none;">
+          <input type="file" id="photoInput" accept="image/*" />
+          <div style="height:8px"></div>
+          <button id="uploadPhotoBtn" class="smallBtn" disabled>Upload Photo</button>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px">Large photos are accepted and displayed. Click image to open full-size.</div>
         </div>
       </div>
 
-      <div>
-        <div class="sectionTitle">Players</div>
-        <div id="playersList" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
+      <div id="emojiPicker" class="emojiPicker" style="display:none">
+        <!-- a compact emoji set -->
+        <button class="emojiBtn">😀</button><button class="emojiBtn">😁</button><button class="emojiBtn">😂</button><button class="emojiBtn">😅</button>
+        <button class="emojiBtn">😊</button><button class="emojiBtn">😍</button><button class="emojiBtn">🤩</button><button class="emojiBtn">😎</button>
+        <button class="emojiBtn">😕</button><button class="emojiBtn">😢</button><button class="emojiBtn">😡</button><button class="emojiBtn">👍</button>
+        <button class="emojiBtn">👎</button><button class="emojiBtn">🙏</button><button class="emojiBtn">🔥</button><button class="emojiBtn">🎉</button>
+        <button class="emojiBtn">💯</button><button class="emojiBtn">🫠</button><button class="emojiBtn">🤖</button><button class="emojiBtn">🌟</button>
       </div>
+    </main>
+
+    <aside class="panel right">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:800">Players</div>
+        <div style="font-size:12px;color:var(--muted)" id="playersStatus">Loading...</div>
+      </div>
+      <div class="playersList" id="playersList"></div>
     </aside>
   </div>
 
   <script>
     (function(){
-      // Simplified endpoints (mockapi used previously)
+      // Minimal mocked endpoints (these can be swapped to real APIs)
       const CHANNELS = { general: 'https://68e839b2f2707e6128ca35e1.mockapi.io/chat', photos: 'https://68eeed86b06cc802829ba196.mockapi.io/photos' };
       const PLAYERS_API = 'https://68e839b2f2707e6128ca35e1.mockapi.io/players';
 
-      // DOM refs
+      // UI refs
       const messagesEl = document.getElementById('messages');
-      const statusEl = document.getElementById('status');
-      const messageInput = document.getElementById('messageInput');
-      const sendBtn = document.getElementById('sendBtn');
-      const charCountEl = document.getElementById('charCount');
-      const emojiBtn = document.getElementById('emojiBtn');
-      const attachBtn = document.getElementById('attachBtn');
-      const photoInput = document.getElementById('photoInput');
-      const pinnedBar = document.getElementById('pinnedBar');
-      const pinnedList = document.getElementById('pinnedList');
+      const chatStatusEl = document.getElementById('chatStatus');
+      const pinnedBarEl = document.getElementById('pinnedBar');
+      const emojiPicker = document.getElementById('emojiPicker');
 
       const usernameInput = document.getElementById('usernameInput');
       const setNameBtn = document.getElementById('setNameBtn');
-      const nameColorInput = document.getElementById('nameColor');
+      const usernameDisplay = document.getElementById('usernameDisplay');
+      const nameInfo = document.getElementById('nameInfo');
+      const userAvatarEl = document.getElementById('userAvatar');
       const avatarInput = document.getElementById('avatarInput');
       const changeAvatarBtn = document.getElementById('changeAvatarBtn');
-      const userAvatarEl = document.getElementById('userAvatar');
 
-      const themeButtons = document.querySelectorAll('.themeBtn');
+      const channelsEl = document.getElementById('channels');
+      const channelTitleEl = document.getElementById('channelTitle');
 
-      // state
+      const messageInput = document.getElementById('messageInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const charCountEl = document.getElementById('charCount');
+
+      const photoToggle = document.getElementById('photoToggle');
+      const photoUploadArea = document.getElementById('photoUploadArea');
+      const photoInput = document.getElementById('photoInput');
+      const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+
+      const pinned = JSON.parse(localStorage.getItem('notcord_pins') || '[]');
+
+      // user state
       let username = localStorage.getItem('notcord_username') || '';
       let nameColor = localStorage.getItem('notcord_nameColor') || '#ffcc00';
       let avatarDataUrl = localStorage.getItem('notcord_avatar') || null;
       let nameChangedAt = Number(localStorage.getItem('notcord_name_changed') || 0);
       let avatarChangedAt = Number(localStorage.getItem('notcord_avatar_changed') || 0);
-      let pinned = JSON.parse(localStorage.getItem('notcord_pins') || '[]');
-      let activeChannel = 'general';
+
+      // app state
+      let activeChannel = localStorage.getItem('notcord_channel') || 'general';
       let apiBase = CHANNELS[activeChannel];
-      let polling = null;
+      let pollingInterval = null;
       const MAX_CHARS = 200;
-      const ONE_WEEK_MS = 7*24*60*60*1000;
-
-      // emoji picker
-      const EMOJIS = ['😀','😁','😂','🤣','😊','😍','😎','😉','👍','🙏','🔥','🎉','💯','🧡','🤝','✨','🤔','😅','😢','😡','👏','🙌','🤩','😴','😜','🙃','😇','😬','🤖','🌟','🍕','☕'];
-      let emojiPickerEl = null;
-
-      // basic bad words
       const BAD_WORDS = ['fuck','bitch','nigger','нахуй','гей','gay','хуета'];
 
-      // css themes definitions
-      const THEMES = {
-        1: { bgA:'#071226', bgB:'#07101a', card:'#0b2233', accent:'#5865f2' },
-        2: { bgA:'#00111a', bgB:'#001822', card:'#082233', accent:'#3ba55d' },
-        3: { bgA:'#1c0b1e', bgB:'#301124', card:'#2b1030', accent:'#ff7b00' }
+      // THEMES
+      const themes = {
+        theme1: { bg1:'#071226', bg2:'#07101a', bg3:'#0b2233', accent:'#5865f2' },
+        theme2: { bg1:'#0b1b2a', bg2:'#06121a', bg3:'#07202a', accent:'#7b61ff' },
+        theme3: { bg1:'#051018', bg2:'#071426', bg3:'#06303a', accent:'#34d399' }
       };
 
-      /* utility */
-      function setStatus(txt){ statusEl.textContent = txt; }
+      function applyTheme(name){
+        const t = themes[name] || themes.theme1;
+        document.documentElement.style.setProperty('--bg-1', t.bg1);
+        document.documentElement.style.setProperty('--bg-2', t.bg2);
+        document.documentElement.style.setProperty('--bg-3', t.bg3);
+        document.documentElement.style.setProperty('--accent', t.accent);
+        localStorage.setItem('notcord_theme', name);
+      }
+
+      // helpers
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
       function formatTime(iso){ try{ const d=new Date(iso); if(isNaN(d)) return ''; return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }catch(e){return ''} }
-      function savePins(){ localStorage.setItem('notcord_pins', JSON.stringify(pinned)); renderPinned(); }
-      function containsBadWords(text){
-        if(!text) return false;
-        const lower = text.toLowerCase();
-        return BAD_WORDS.some(w => w && lower.includes(w));
-      }
+      function containsBadWords(text){ if(!text) return false; const lower = text.toLowerCase(); return BAD_WORDS.some(w => w && lower.includes(w)); }
 
-      /* theme application */
-      function applyTheme(num){
-        const t = THEMES[num] || THEMES[1];
-        document.documentElement.style.setProperty('--bg-a', t.bgA);
-        document.documentElement.style.setProperty('--bg-b', t.bgB);
-        document.documentElement.style.setProperty('--card', t.card);
-        document.documentElement.style.setProperty('--accent', t.accent);
-        localStorage.setItem('notcord_theme', String(num));
-      }
-
-      /* pinned rendering */
+      // pinned
       function renderPinned(){
-        pinnedList.innerHTML = '';
-        if(!pinned.length){ pinnedBar.style.display = 'none'; return; }
-        pinnedBar.style.display = 'flex';
+        pinnedBarEl.innerHTML = '';
+        if(!pinned.length){ pinnedBarEl.style.display = 'none'; return; }
+        pinnedBarEl.style.display = 'flex';
         pinned.forEach((p,i)=>{
           const chip = document.createElement('div'); chip.className='pinChip';
-          chip.textContent = (p.username? p.username+': ':'') + ((p.message||p.text||'').slice(0,40)) + ((p.message||'').length>40? '…':'');
+          chip.textContent = (p.username ? p.username + ': ' : '') + ((p.message||p.text||'').slice(0,40)) + ((p.message||p.text||'').length>40?'…':'');
           const unpin = document.createElement('button'); unpin.className='smallBtn'; unpin.textContent='Unpin';
-          unpin.onclick = ()=>{ pinned.splice(i,1); savePins(); };
+          unpin.onclick = ()=>{ pinned.splice(i,1); localStorage.setItem('notcord_pins', JSON.stringify(pinned)); renderPinned(); };
           chip.appendChild(unpin);
-          pinnedList.appendChild(chip);
+          pinnedBarEl.appendChild(chip);
         });
       }
 
-      /* rendering messages */
-      function renderMessage(msg){
-        if(msg.privateTo && !(msg.privateTo === username || msg.username === username)) return null;
-        const row = document.createElement('div'); row.className='messageRow' + ((msg.username||'')===username ? ' me' : '');
+      // render message
+      function renderMessage(msg, local){
+        if(msg.privateTo && !(msg.privateTo === local || msg.username === local)) return null;
+        const row = document.createElement('div'); row.className='msgRow';
+        if((msg.username||'').toLowerCase() === (local||'').toLowerCase()) row.classList.add('me');
 
-        const avatar = document.createElement('div'); avatar.className='avatar';
-        if(msg.avatar) { const im=document.createElement('img'); im.src=msg.avatar; avatar.appendChild(im); }
-        else avatar.textContent = (msg.username||'U').slice(0,1).toUpperCase();
+        const av = document.createElement('div'); av.className='msgAvatar';
+        if(msg.avatar){ const im = document.createElement('img'); im.src = msg.avatar; im.style.width='100%'; im.style.height='100%'; im.style.objectFit='cover'; av.appendChild(im); }
+        else av.textContent = (msg.username||'U').slice(0,1).toUpperCase();
 
         const bubble = document.createElement('div'); bubble.className='bubble';
         const meta = document.createElement('div'); meta.className='meta';
         const nameEl = document.createElement('div'); nameEl.className='name'; nameEl.textContent = msg.username || 'Unknown';
         if(msg.nameColor) nameEl.style.color = msg.nameColor;
-        const timeEl = document.createElement('div'); timeEl.className='time'; timeEl.style.marginLeft='8px'; timeEl.style.fontSize='12px'; timeEl.style.color='var(--muted)'; timeEl.textContent = formatTime(msg.createdAt || msg.created_at || msg.timestamp || new Date().toISOString());
+        else if((msg.username||'') === username && nameColor) nameEl.style.color = nameColor;
+
+        const timeEl = document.createElement('div'); timeEl.className='time'; timeEl.style.marginLeft='auto'; timeEl.style.color='var(--muted)'; timeEl.textContent = formatTime(msg.createdAt || msg.created_at || msg.timestamp || new Date().toISOString());
+
         meta.appendChild(nameEl); meta.appendChild(timeEl);
 
-        const controls = document.createElement('div'); controls.className='controls';
+        const ctrl = document.createElement('div'); ctrl.style.display='flex'; ctrl.style.gap='6px';
         const replyBtn = document.createElement('button'); replyBtn.className='smallBtn'; replyBtn.textContent='Reply';
-        replyBtn.onclick = ()=> setReplyTo(msg);
+        replyBtn.onclick = (e)=>{ e.stopPropagation(); setReplyTo(msg); };
         const pinBtn = document.createElement('button'); pinBtn.className='smallBtn'; pinBtn.textContent='Pin';
-        pinBtn.onclick = ()=> { pinned.unshift({ username: msg.username, message: msg.message || msg.text || '', createdAt: msg.createdAt || msg.created_at }); pinned = pinned.slice(0,10); savePins(); };
-        controls.appendChild(replyBtn); controls.appendChild(pinBtn);
-        meta.appendChild(controls);
+        pinBtn.onclick = (e)=>{ e.stopPropagation(); pinned.unshift({ username: msg.username, message: msg.message, createdAt: msg.createdAt }); while(pinned.length>10) pinned.pop(); localStorage.setItem('notcord_pins', JSON.stringify(pinned)); renderPinned(); };
+        ctrl.appendChild(replyBtn); ctrl.appendChild(pinBtn);
+        meta.appendChild(ctrl);
 
         bubble.appendChild(meta);
 
         if(msg.replyTo){
-          const rt = document.createElement('div'); rt.style.fontSize='12px'; rt.style.color='var(--muted)'; rt.style.borderLeft='3px solid rgba(255,255,255,0.03)'; rt.style.paddingLeft='8px';
-          rt.textContent = `Reply to ${(msg.replyTo.name || msg.replyTo.username || '')}: ${ (msg.replyTo.message || msg.replyTo.text || '').slice(0,120) }`;
+          const rt = document.createElement('div'); rt.style.fontSize='13px'; rt.style.color='var(--muted)'; rt.style.borderLeft='3px solid rgba(255,255,255,0.03)'; rt.style.paddingLeft='8px';
+          rt.textContent = `Reply to ${msg.replyTo.name || msg.replyTo.username || 'Unknown'}: ${ (msg.replyTo.message || '').slice(0,120)}`;
           bubble.appendChild(rt);
         }
 
         if(msg.imageUrl){
-          const photoWrap = document.createElement('div'); photoWrap.className='photoMessage';
-          const img = document.createElement('img'); img.src = msg.imageUrl; img.alt = msg.message || '';
+          const photoDiv = document.createElement('div'); photoDiv.className='photoMessage';
+          const img = document.createElement('img'); img.src = msg.imageUrl; img.alt = msg.message || 'photo';
           img.addEventListener('click', ()=> window.open(img.src, '_blank'));
-          photoWrap.appendChild(img);
+          photoDiv.appendChild(img);
           if(msg.message){
-            const cap = document.createElement('div'); cap.className='text'; cap.textContent = msg.message;
-            photoWrap.appendChild(cap);
+            const caption = document.createElement('div'); caption.className='text'; caption.textContent = msg.message;
+            photoDiv.appendChild(caption);
           }
-          bubble.appendChild(photoWrap);
+          bubble.appendChild(photoDiv);
         } else {
-          const text = document.createElement('div'); text.className='text';
+          const textDiv = document.createElement('div'); textDiv.className='text';
           let content = msg.message || msg.text || '';
-          // highlight mentions
-          content = escapeHtml(content).replace(/@([A-Za-z0-9_]{1,8})/g, (m,p1) => `<span style="color:var(--accent);font-weight:700">@${p1}</span>`);
-          text.innerHTML = content;
-          bubble.appendChild(text);
+          // basic @highlight
+          content = escapeHtml(content).replace(/@([A-Za-z0-9_]{1,8})/g, (m,p1)=>`<span style="color:var(--accent);font-weight:800">@${p1}</span>`);
+          textDiv.innerHTML = content;
+          bubble.appendChild(textDiv);
         }
 
-        row.appendChild(avatar); row.appendChild(bubble);
+        row.appendChild(av); row.appendChild(bubble);
         return row;
       }
 
-      function isAtBottom(){ return messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 120; }
-      function scrollToBottom(){ requestAnimationFrame(()=> messagesEl.scrollTop = messagesEl.scrollHeight); }
-
-      /* fetch messages (polling) */
+      // fetch messages
       async function fetchMessages(){
         if(!apiBase) return;
         try{
           const res = await fetch(apiBase);
-          if(!res.ok) throw new Error('Fetch failed');
+          if(!res.ok) throw new Error('Fetch failed: '+res.status);
           let data = await res.json();
-          if(!Array.isArray(data)) data = [];
-          data.sort((a,b)=> (new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || 0) - (new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || 0));
-          const wasBottom = isAtBottom();
+          if(!Array.isArray(data)) return;
+          data.sort((a,b)=> (new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || 0) - (new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || 0) );
           messagesEl.innerHTML = '';
           for(const m of data){
-            const el = renderMessage(m);
+            const el = renderMessage(m, username);
             if(el) messagesEl.appendChild(el);
           }
-          if(wasBottom) scrollToBottom();
-          setStatus('Connected — ' + data.length + ' messages');
-        }catch(e){ console.warn(e); setStatus('Error fetching'); }
+          chatStatusEl.textContent = 'Connected — ' + data.length + ' messages';
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }catch(e){ console.error(e); chatStatusEl.textContent = 'Error fetching messages'; }
       }
 
-      /* posting */
+      // send message
       async function postMessage(rawText){
         if(!rawText || !rawText.trim()) return;
-        if(!username){ setStatus('Set username first'); return; }
-        if(containsBadWords(rawText)){ setStatus('Forbidden words detected. Message blocked.'); return; }
+        if(!username){ alert('Set a username first'); return; }
+        if(containsBadWords(rawText)){ alert('Forbidden words detected. Message blocked.'); return; }
 
         let privateTo = null;
         let messageText = rawText.trim();
         if(messageText.toLowerCase().startsWith('/w ')){
           const m = messageText.match(/^\/w\s+(\S+)\s+([\s\S]+)$/i);
-          if(m){ privateTo = m[1]; messageText = m[2]; } else { setStatus('Whisper format: /w name text'); return; }
+          if(m){ privateTo = m[1]; messageText = m[2]; if(!messageText){ alert('Whisper requires text'); return; } }
+          else { alert('Whisper format: /w name text'); return; }
         }
 
         const payload = { username, message: messageText, createdAt: new Date().toISOString(), nameColor, privateTo: privateTo || null, avatar: avatarDataUrl || null };
-        // optimistic render
-        const optimistic = renderMessage(payload);
+        // optimistic
+        const optimistic = renderMessage(payload, username);
         if(optimistic) messagesEl.appendChild(optimistic);
-        scrollToBottom();
+        messagesEl.scrollTop = messagesEl.scrollHeight;
 
         try{
-          const r = await fetch(apiBase, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          if(!r.ok) throw new Error('Send failed');
+          const res = await fetch(apiBase, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          if(!res.ok) throw new Error('Send failed: '+res.status);
           await fetchMessages();
-        }catch(e){ console.warn(e); setStatus('Failed to send'); }
+        }catch(e){ console.error(e); chatStatusEl.textContent = 'Failed to send'; }
       }
 
-      /* upload photo: user requested big photos allowed (we will NOT downscale unless >4MB to avoid browser crashes) */
-      async function uploadPhotoFile(file){
+      // upload photo (no resizing for large images — accept as-is)
+      async function uploadPhoto(file){
         if(!file) return;
-        if(containsBadWords(file.name)){ setStatus('Forbidden file name'); return; }
+        if(!username){ alert('Set username first'); return; }
+        if(containsBadWords(file.name)){ alert('Forbidden file name.'); return; }
+
         try{
-          setStatus('Preparing photo...');
+          // read file as DataURL — allow large images (be aware of memory)
           const dataUrl = await new Promise((res,rej)=>{
             const r = new FileReader();
-            r.onload = e => res(e.target.result);
-            r.onerror = () => rej('read fail');
+            r.onload = e=>res(e.target.result);
+            r.onerror = ()=>rej('read failed');
             r.readAsDataURL(file);
           });
-          // If overly large (>4MB) downscale to avoid huge payloads (best-effort)
-          let finalData = dataUrl;
-          if(finalData.length > 4 * 1024 * 1024){
-            // try to downscale to 1920x1920
-            const img = new Image();
-            const p = new Promise((resolve, reject)=>{
-              img.onload = ()=>{
-                const w = img.width, h = img.height;
-                const ratio = Math.min(1920/w, 1920/h, 1);
-                const cw = Math.round(w*ratio), ch = Math.round(h*ratio);
-                const canvas = document.createElement('canvas'); canvas.width = cw; canvas.height = ch;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img,0,0,cw,ch);
-                resolve(canvas.toDataURL('image/jpeg', 0.9));
-              };
-              img.onerror = ()=> reject('image load fail');
-              img.src = dataUrl;
-            });
-            finalData = await p;
-          }
-
-          const payload = { username, createdAt: new Date().toISOString(), nameColor, imageUrl: finalData, message: '', avatar: avatarDataUrl || null };
-          const r = await fetch(CHANNELS.photos, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          if(!r.ok) throw new Error('upload failed');
-          setStatus('Photo uploaded');
+          const payload = { username, createdAt: new Date().toISOString(), nameColor, imageUrl: dataUrl, message: '', avatar: avatarDataUrl || null };
+          const res = await fetch(CHANNELS.photos, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          if(!res.ok) throw new Error('Upload failed: '+res.status);
+          photoInput.value = '';
+          photoUploadArea.style.display = 'none';
           await fetchMessages();
-        }catch(e){ console.warn(e); setStatus('Photo upload failed'); }
+        }catch(e){ console.error(e); chatStatusEl.textContent = 'Photo upload failed'; }
       }
 
-      /* reply handling */
+      // reply handling
       let replyTo = null;
-      const replyPreview = document.createElement('div');
-      replyPreview.style.display='none';
-      replyPreview.style.padding='8px';
-      replyPreview.style.background='rgba(255,255,255,0.02)';
-      replyPreview.style.borderRadius='8px';
-      replyPreview.style.margin='8px 16px';
-      document.querySelector('.chatCard').insertBefore(replyPreview, document.querySelector('#messages'));
-
       function setReplyTo(msg){
         replyTo = msg;
-        replyPreview.style.display='block';
-        replyPreview.innerHTML = `<strong>${escapeHtml(msg.username || msg.name || 'Unknown')}</strong> — ${(escapeHtml((msg.message||msg.text||'')).slice(0,140))} <button id="cancelReply" class="smallBtn">Esc</button>`;
+        const box = document.getElementById('replyPreview');
+        box.style.display = 'block';
+        box.innerHTML = `<div style="padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);display:flex;justify-content:space-between;align-items:center">
+          <div><strong>${escapeHtml(msg.username||msg.name||'Unknown')}</strong> — ${(escapeHtml((msg.message||'')).slice(0,120))}</div>
+          <div><button id="cancelReply" class="smallBtn">Esc</button></div>
+        </div>`;
         document.getElementById('cancelReply').onclick = clearReply;
-        messageInput.focus();
       }
-      function clearReply(){
-        replyTo = null;
-        replyPreview.style.display='none';
-        replyPreview.innerHTML = '';
-      }
+      function clearReply(){ replyTo = null; document.getElementById('replyPreview').style.display = 'none'; document.getElementById('replyPreview').innerHTML = ''; }
 
-      /* event wiring */
-      messageInput.addEventListener('input', ()=>{
-        const v = messageInput.value || '';
-        if(v.length > MAX_CHARS) messageInput.value = v.slice(0, MAX_CHARS);
-        charCountEl.textContent = `${messageInput.value.length} / ${MAX_CHARS}`;
-        const can = (messageInput.value||'').trim().length > 0 && username;
-        sendBtn.disabled = !can;
-      });
-
-      messageInput.addEventListener('keydown', (e)=>{
-        if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendBtn.click(); }
-        if(e.key === 'Escape' && replyTo){ clearReply(); }
-      });
-
-      sendBtn.addEventListener('click', ()=>{
-        const txt = messageInput.value;
-        if(replyTo){
-          // attach reply metadata
-          const metaText = txt + ' ';
-          postMessage(metaText); // server-side reply included not implemented fully on mock; kept simple
-          clearReply();
-        } else {
-          postMessage(txt);
-        }
-        messageInput.value = ''; messageInput.dispatchEvent(new Event('input'));
-      });
-
-      attachBtn.addEventListener('click', ()=> photoInput.click());
-      photoInput.addEventListener('change', ()=> {
-        if(photoInput.files && photoInput.files[0]) uploadPhotoFile(photoInput.files[0]);
-        photoInput.value = '';
-      });
-
-      /* emoji picker */
-      function showEmojiPicker(){
-        if(emojiPickerEl){
-          emojiPickerEl.remove(); emojiPickerEl = null; return;
-        }
-        emojiPickerEl = document.createElement('div'); emojiPickerEl.className='emojiPicker';
-        EMOJIS.forEach(e => {
-          const it = document.createElement('div'); it.className='emojiItem'; it.textContent = e;
-          it.onclick = ()=> { insertAtCursor(messageInput, e); emojiPickerEl.remove(); emojiPickerEl = null; messageInput.focus(); messageInput.dispatchEvent(new Event('input')); };
-          emojiPickerEl.appendChild(it);
-        });
-        // position near button
-        const rect = emojiBtn.getBoundingClientRect();
-        emojiPickerEl.style.top = (rect.bottom + window.scrollY + 6) + 'px';
-        emojiPickerEl.style.left = (rect.left + window.scrollX - 10) + 'px';
-        document.body.appendChild(emojiPickerEl);
-      }
-      emojiBtn.addEventListener('click', showEmojiPicker);
-      document.addEventListener('click', (e)=> { if(emojiPickerEl && !emojiPickerEl.contains(e.target) && e.target !== emojiBtn) { emojiPickerEl.remove(); emojiPickerEl = null; } });
-
-      function insertAtCursor(textarea, text){
-        const start = textarea.selectionStart || 0;
-        const end = textarea.selectionEnd || 0;
-        const before = textarea.value.substring(0, start);
-        const after = textarea.value.substring(end);
-        textarea.value = before + text + after;
-        const newPos = start + text.length;
-        textarea.selectionStart = textarea.selectionEnd = newPos;
-      }
-
-      /* username / avatar management */
-      setNameBtn.addEventListener('click', async ()=>{
-        let val = (usernameInput.value || '').trim();
-        if(!val) val = 'Guest' + Math.floor(Math.random()*9000+1000);
-        const now = Date.now();
-        if(nameChangedAt && now - nameChangedAt < ONE_WEEK_MS){
-          alert('You can change your name once per week.');
-          return;
-        }
-        username = val;
-        localStorage.setItem('notcord_username', username);
-        nameChangedAt = now; localStorage.setItem('notcord_name_changed', String(nameChangedAt));
-        setStatus('Name set: ' + username);
-      });
-
-      changeAvatarBtn.addEventListener('click', async ()=>{
-        if(!avatarInput.files.length){ alert('Choose image first'); return; }
-        const file = avatarInput.files[0];
-        const now = Date.now();
-        if(avatarChangedAt && now - avatarChangedAt < ONE_WEEK_MS){
-          alert('You can change avatar once per week.');
-          return;
-        }
-        try{
-          const dataUrl = await new Promise((res,rej)=>{
-            const fr = new FileReader();
-            fr.onload = e => res(e.target.result);
-            fr.onerror = ()=> rej('read failed');
-            fr.readAsDataURL(file);
-          });
-          avatarDataUrl = dataUrl;
-          avatarChangedAt = now;
-          localStorage.setItem('notcord_avatar', avatarDataUrl);
-          localStorage.setItem('notcord_avatar_changed', String(avatarChangedAt));
-          userAvatarEl.innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`;
-          setStatus('Avatar updated');
-        }catch(e){ console.warn(e); setStatus('Avatar upload failed'); }
-      });
-
-      nameColorInput.addEventListener('input', ()=>{
-        nameColor = nameColorInput.value;
-        localStorage.setItem('notcord_nameColor', nameColor);
-        setStatus('Name color updated');
-      });
-
-      /* theme buttons */
-      themeButtons.forEach(btn => {
-        btn.addEventListener('click', ()=> { applyTheme(btn.getAttribute('data-theme')); });
-      });
-      // initialize theme
-      const savedTheme = Number(localStorage.getItem('notcord_theme') || 1);
-      applyTheme(savedTheme);
-
-      /* players fetch (no idle tracking) */
+      // players
       async function fetchPlayers(){
         try{
           const res = await fetch(PLAYERS_API);
-          if(!res.ok) throw new Error('players fetch failed');
+          if(!res.ok) throw new Error('Players fetch failed');
           const data = await res.json();
-          const list = document.getElementById('playersList'); list.innerHTML = '';
-          if(Array.isArray(data)){
-            data.forEach(p => {
-              const el = document.createElement('div'); el.className='player';
-              const dot = document.createElement('div'); dot.className='dot';
-              const name = document.createElement('div'); name.textContent = p.name || p.username || ('#'+(p.id||''));
-              el.appendChild(dot); el.appendChild(name);
-              list.appendChild(el);
-            });
+          if(!Array.isArray(data)){ document.getElementById('playersList').innerHTML=''; document.getElementById('playersStatus').textContent='No players'; return; }
+          const list = document.getElementById('playersList');
+          list.innerHTML = '';
+          const onlineHeader = document.createElement('div'); onlineHeader.style.color='var(--muted)'; onlineHeader.style.fontSize='13px'; onlineHeader.textContent = 'Players ('+data.length+')';
+          list.appendChild(onlineHeader);
+          for(const p of data){
+            const item = document.createElement('div'); item.className='player';
+            const dot = document.createElement('div'); dot.className='dot';
+            const name = document.createElement('div'); name.innerHTML = escapeHtml(p.name || p.username || 'User');
+            const right = document.createElement('div'); right.style.marginLeft='auto'; right.style.fontSize='12px'; right.style.color='var(--muted)'; right.textContent = p.state || 'online';
+            item.appendChild(dot); item.appendChild(name); item.appendChild(right);
+            list.appendChild(item);
           }
-        }catch(e){ console.warn(e); }
+          document.getElementById('playersStatus').textContent = 'Updated ' + new Date().toLocaleTimeString();
+        }catch(e){ console.warn(e); document.getElementById('playersStatus').textContent='Error'; }
       }
 
-      /* polling */
-      async function startPolling(){
-        if(polling) clearInterval(polling);
-        await fetchMessages();
-        polling = setInterval(fetchMessages, 4000);
-        fetchPlayers();
-        setInterval(fetchPlayers, 8000);
-      }
+      // basic init & events
+      async function init(){
+        // theme
+        const savedTheme = localStorage.getItem('notcord_theme') || 'theme1';
+        applyTheme(savedTheme);
+        document.getElementById('theme1').onclick = ()=>applyTheme('theme1');
+        document.getElementById('theme2').onclick = ()=>applyTheme('theme2');
+        document.getElementById('theme3').onclick = ()=>applyTheme('theme3');
 
-      /* reply attach support when posting is used; simple because mockapi won't store nested replies reliably */
-      // Note: reply metadata will be attached client-side only in optimistic render.
+        // username / avatar
+        if(username){ usernameDisplay.textContent = username; nameInfo.textContent = 'You can change name in 7 days'; }
+        if(avatarDataUrl){ userAvatarEl.innerHTML = `<img src="${avatarDataUrl}" style="width:100%;height:100%;object-fit:cover">`; }
 
-      /* initialization */
-      function init(){
-        if(username) usernameInput.value = username;
-        if(nameColor) nameColorInput.value = nameColor;
-        if(avatarDataUrl) userAvatarEl.innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`;
+        setNameBtn.addEventListener('click', async ()=>{
+          const val = (usernameInput.value || '').trim() || ('Guest' + Math.floor(Math.random()*9000+1000));
+          const now = Date.now();
+          const oneWeek = 7*24*60*60*1000;
+          if(nameChangedAt && now - nameChangedAt < oneWeek){ alert('You can change your name only once/week.'); return; }
+          username = val.slice(0,8);
+          localStorage.setItem('notcord_username', username);
+          nameChangedAt = now; localStorage.setItem('notcord_name_changed', String(nameChangedAt));
+          usernameDisplay.textContent = username;
+          nameInfo.textContent = 'You can change name in 7 days';
+          await upsertLocalPlayer();
+          fetchPlayers();
+        });
+
+        changeAvatarBtn.addEventListener('click', async ()=>{
+          if(!avatarInput.files.length){ alert('Select a file'); return; }
+          const file = avatarInput.files[0];
+          const now = Date.now();
+          const oneWeek = 7*24*60*60*1000;
+          if(avatarChangedAt && now - avatarChangedAt < oneWeek){ alert('You can change your avatar only once/week'); return; }
+          try{
+            // resize for avatar to keep data small
+            const mini = await resizeAvatar(file, 256, 256);
+            avatarDataUrl = mini;
+            avatarChangedAt = now;
+            localStorage.setItem('notcord_avatar', avatarDataUrl);
+            localStorage.setItem('notcord_avatar_changed', String(avatarChangedAt));
+            userAvatarEl.innerHTML = `<img src="${avatarDataUrl}" style="width:100%;height:100%;object-fit:cover">`;
+            await upsertLocalPlayer();
+          }catch(e){ alert('Avatar upload failed'); console.error(e); }
+        });
+
+        // channels
+        channelsEl.addEventListener('click', (e)=>{
+          const ch = e.target.closest('.channel'); if(!ch) return;
+          Array.from(channelsEl.children).forEach(c=>c.classList.toggle('active', c===ch));
+          activeChannel = ch.dataset.id;
+          apiBase = CHANNELS[activeChannel];
+          localStorage.setItem('notcord_channel', activeChannel);
+          channelTitleEl.textContent = '# ' + activeChannel;
+          updateInputVisibility();
+          fetchMessages();
+          if(pollingInterval) clearInterval(pollingInterval);
+          pollingInterval = setInterval(fetchMessages, 4000);
+        });
+
+        // emoji picker
+        document.getElementById('emojiToggle').addEventListener('click', (e)=>{
+          emojiPicker.style.display = emojiPicker.style.display === 'none' ? 'flex' : 'none';
+        });
+        // emoji insertion
+        emojiPicker.addEventListener('click', (e)=>{
+          if(e.target.classList.contains('emojiBtn')){ const em = e.target.textContent; const pos = messageInput.selectionStart || 0; const v = messageInput.value; messageInput.value = v.slice(0,pos) + em + v.slice(pos); messageInput.focus(); updateCharCount(); }
+        });
+
+        // photo toggle
+        photoToggle.addEventListener('click', ()=>{ photoUploadArea.style.display = photoUploadArea.style.display === 'none' ? 'block' : 'none'; });
+
+        photoInput.addEventListener('change', ()=>{ uploadPhotoBtn.disabled = !photoInput.files.length; });
+
+        uploadPhotoBtn.addEventListener('click', ()=>{ if(photoInput.files.length) uploadPhoto(photoInput.files[0]); });
+
+        // message composer
+        messageInput.addEventListener('input', updateCharCount);
+        messageInput.addEventListener('keydown', (e)=>{
+          if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); if(!sendBtn.disabled) sendBtn.click(); }
+          if(e.key === 'Escape' && replyTo){ clearReply(); }
+        });
+
+        sendBtn.addEventListener('click', ()=>{
+          postMessage(messageInput.value);
+          messageInput.value = ''; updateCharCount();
+          clearReply();
+        });
+
+        // pinned UI
         renderPinned();
-        startPolling();
-        setStatus('Connected (polling)');
-        // wire initial charcount
-        messageInput.dispatchEvent(new Event('input'));
+
+        // players
+        fetchPlayers();
+        setInterval(fetchPlayers, 5000);
+
+        // initial fetch
+        apiBase = CHANNELS[activeChannel];
+        channelTitleEl.textContent = '# ' + activeChannel;
+        await fetchMessages();
+        if(pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(fetchMessages, 4000);
+        updateCharCount();
       }
+
+      // small avatar resize helper (keeps avatar small)
+      function resizeAvatar(file, maxW=256, maxH=256){
+        return new Promise((resolve,reject)=>{
+          if(!file.type.startsWith('image/')) return reject('Not image');
+          const img = new Image();
+          const reader = new FileReader();
+          reader.onload = (e)=>{
+            img.onload = ()=>{
+              let w = img.width, h = img.height;
+              const ratio = Math.min(1, Math.min(maxW/w, maxH/h));
+              const cw = Math.round(w*ratio), ch = Math.round(h*ratio);
+              const canvas = document.createElement('canvas'); canvas.width = cw; canvas.height = ch;
+              const ctx = canvas.getContext('2d'); ctx.drawImage(img,0,0,cw,ch);
+              const dataUrl = canvas.toDataURL('image/png', 0.9);
+              resolve(dataUrl);
+            };
+            img.onerror = ()=>reject('Image load failed');
+            img.src = e.target.result;
+          };
+          reader.onerror = ()=>reject('Read failed');
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // players upsert (simple)
+      async function upsertLocalPlayer(){
+        if(!username) return;
+        try{
+          const res = await fetch(PLAYERS_API);
+          if(!res.ok) return;
+          const data = await res.json(); if(!Array.isArray(data)) return;
+          const found = data.find(p => (p.name||p.username||'').toLowerCase() === username.toLowerCase());
+          if(found){
+            await fetch(`${PLAYERS_API}/${found.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ ...found, name: username, lastSeen: new Date().toISOString(), nameColor, avatar: avatarDataUrl, state: 'online' }) });
+          } else {
+            await fetch(PLAYERS_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: username, lastSeen: new Date().toISOString(), nameColor, avatar: avatarDataUrl, state: 'online' }) });
+          }
+        }catch(e){ console.warn('upsert', e); }
+      }
+
+      // input visibility for channels
+      function updateInputVisibility(){
+        if(activeChannel === 'photos'){
+          document.getElementById('composer').style.display = 'none';
+          photoUploadArea.style.display = 'block';
+        } else {
+          document.getElementById('composer').style.display = 'flex';
+          photoUploadArea.style.display = 'none';
+        }
+      }
+
+      function updateCharCount(){
+        const v = messageInput.value || '';
+        charCountEl.textContent = `${v.length} / ${MAX_CHARS}`;
+        const canSend = username && v.trim().length > 0 && activeChannel !== 'photos' && v.length <= MAX_CHARS;
+        sendBtn.disabled = !canSend;
+      }
+
+      // initial call
       init();
 
-      // Expose for debugging
+      // expose some functions for debugging
       window._notcord = { fetchMessages, fetchPlayers, pinned };
 
     })();
