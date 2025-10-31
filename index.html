@@ -14,10 +14,10 @@
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Helvetica,Arial;color:var(--text);
       background:linear-gradient(180deg,var(--theme-1),var(--theme-2));}
-    .app{display:grid;grid-template-columns:260px 1fr 260px;height:100vh;gap:0;min-height:0}
+    .app{display:grid;grid-template-columns:300px 1fr 260px;height:100vh;gap:0;min-height:0}
     .sidebar{padding:14px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg,var(--theme-1),var(--theme-2));border-right:1px solid var(--border);overflow:auto}
     .brand{display:flex;gap:10px;align-items:center;font-weight:800}
-    .brand .logo{width:26px;height:26px;border-radius:6px;background:var(--theme-2);display:flex;align-items:center;justify-content:center;font-weight:900}
+    .brand .logo{width:28px;height:28px;border-radius:6px;background:var(--theme-2);display:flex;align-items:center;justify-content:center;font-weight:900}
     .channels{display:flex;flex-direction:column;gap:6px;margin-top:8px}
     .channel{padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer;border:1px solid transparent;display:flex;justify-content:space-between;align-items:center}
     .channel.active{background:linear-gradient(90deg, rgba(88,101,242,0.12), rgba(88,101,242,0.02));color:var(--text);border-color:rgba(88,101,242,0.12)}
@@ -49,7 +49,9 @@
     .pinnedItem{padding:6px;border-radius:6px;background:rgba(255,255,255,0.01);display:flex;gap:8px;align-items:center}
     .replyBtn{margin-left:8px;font-size:12px;color:var(--muted);background:transparent;border:none;cursor:pointer}
     .mentionHighlight{background:rgba(240,196,25,0.12);color:var(--idle-yellow);padding:2px 4px;border-radius:4px}
-    @media (max-width:980px){ .app{grid-template-columns:200px 1fr 140px} }
+    .settings label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+    .settings input[type="color"]{width:48px;height:32px;padding:0;border:none;background:transparent;cursor:pointer}
+    @media (max-width:980px){ .app{grid-template-columns:220px 1fr 140px} }
     @media (max-width:720px){ .app{grid-template-columns:1fr} .sidebar,.playersPanel{display:none} }
   </style>
 </head>
@@ -81,12 +83,41 @@
           </label>
           <button id="changeNameBtn" style="padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Change Name</button>
         </div>
+
+        <div class="settings" style="margin-top:10px">
+          <label>Your name color
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="color" id="nameColor" />
+              <button id="resetNameColor" style="padding:6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Reset</button>
+            </div>
+          </label>
+
+          <label>Theme color 1
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="color" id="theme1" />
+              <button id="resetTheme1" style="padding:6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Reset</button>
+            </div>
+          </label>
+
+          <label>Theme color 2
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="color" id="theme2" />
+              <button id="resetTheme2" style="padding:6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Reset</button>
+            </div>
+          </label>
+
+          <label>Theme color 3 (bubbles)
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="color" id="theme3" />
+              <button id="resetTheme3" style="padding:6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Reset</button>
+            </div>
+          </label>
+        </div>
       </div>
 
       <div class="channels" id="channels" style="margin-top:12px">
         <div class="channel active" data-id="general"># general</div>
         <div class="channel" data-id="photos"># photos</div>
-        <!-- removed # announcements and # general 2 -->
       </div>
 
       <div style="margin-top:auto">
@@ -132,17 +163,17 @@
     </aside>
   </div>
 
-  <!-- Socket.IO client from CDN (if server serves local copy replace src) -->
+  <!-- Socket.IO client (CDN) -->
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
     (function(){
-      // Configuration
-      const API_BASE = ''; // same origin
+      // Config & keys
+      const CLIENT_TOKEN_KEY = 'notcord_client_token_v1';
+      const PINS_KEY = 'notcord_pins_local_v1';
+      const TYPING_KEY = 'notcord_typing_map_v1';
       const MAX_NAME_LEN = 8;
       const NAME_CHANGE_KEY = 'notcord_name_change_ts_server';
       const AVATAR_CHANGE_KEY = 'notcord_avatar_change_ts_server';
-      const CLIENT_TOKEN_KEY = 'notcord_client_token_v1';
-      const PINS_KEY = 'notcord_pins_local_v1';
       const TYPING_EXPIRE_MS = 5000;
 
       // DOM refs
@@ -173,28 +204,53 @@
       const pinnedList = document.getElementById('pinnedList');
       const clearPinsBtn = document.getElementById('clearPins');
 
+      const nameColorInput = document.getElementById('nameColor');
+      const theme1Input = document.getElementById('theme1');
+      const theme2Input = document.getElementById('theme2');
+      const theme3Input = document.getElementById('theme3');
+      const resetNameColorBtn = document.getElementById('resetNameColor');
+      const resetTheme1Btn = document.getElementById('resetTheme1');
+      const resetTheme2Btn = document.getElementById('resetTheme2');
+      const resetTheme3Btn = document.getElementById('resetTheme3');
+
       const playersListEl = document.getElementById('playersList');
 
       // State
       let activeChannel = localStorage.getItem('notcord_channel') || 'general';
       let clientToken = localStorage.getItem(CLIENT_TOKEN_KEY) || generateClientToken();
-      let currentUser = null; // { id, name, nameColor, avatar, nameChangedAt, avatarChangedAt }
+      let currentUser = null;
       let socket = null;
-      let typingMap = {}; // { channel: { name: timestamp } }
-      let replyTo = null;
       let pinnedMessages = JSON.parse(localStorage.getItem(PINS_KEY) || '[]');
+      let replyTo = null;
+
+      // Theme and name color defaults
+      let nameColor = localStorage.getItem('notcord_nameColor') || '#ffcc00';
+      let theme1 = localStorage.getItem('notcord_theme1') || getComputedStyle(document.documentElement).getPropertyValue('--theme-1').trim() || '#071226';
+      let theme2 = localStorage.getItem('notcord_theme2') || getComputedStyle(document.documentElement).getPropertyValue('--theme-2').trim() || '#07101a';
+      let theme3 = localStorage.getItem('notcord_theme3') || getComputedStyle(document.documentElement).getPropertyValue('--theme-3').trim() || '#0b2233';
 
       // Helpers
       function generateClientToken(){ const t = (crypto && crypto.randomUUID) ? crypto.randomUUID() : 'ct-'+Math.random().toString(36).slice(2); localStorage.setItem(CLIENT_TOKEN_KEY, t); return t; }
       function setStatus(txt){ statusEl.textContent = txt; }
       function now(){ return Date.now(); }
-      function fmtTime(iso){ try{ const d=new Date(iso); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }catch(e){return ''} }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-      function savePins(){ localStorage.setItem(PINS_KEY, JSON.stringify(pinnedMessages)); refreshPinnedUI(); }
-      function isMessagePinned(id){ return pinnedMessages.includes(String(id)); }
-      function truncate(s,n=60){ return s && s.length>n ? s.slice(0,n-1)+'…' : (s||''); }
+      function fmtTime(iso){ try{ const d=new Date(iso); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }catch(e){return ''} }
 
-      // UI updates
+      // Theme application
+      function applyTheme(){
+        document.documentElement.style.setProperty('--theme-1', theme1);
+        document.documentElement.style.setProperty('--theme-2', theme2);
+        document.documentElement.style.setProperty('--theme-3', theme3);
+        document.documentElement.style.setProperty('--accent', theme1);
+      }
+      function initThemeInputs(){
+        nameColorInput.value = nameColor;
+        theme1Input.value = theme1;
+        theme2Input.value = theme2;
+        theme3Input.value = theme3;
+      }
+
+      // UI helpers
       function setActiveChannelUI(id){
         activeChannel = id;
         localStorage.setItem('notcord_channel', id);
@@ -202,11 +258,24 @@
         channelTitle.textContent = '# ' + id;
         if(id === 'photos'){ inputArea.style.display='none'; photoUploadArea.style.display='flex'; } else { inputArea.style.display='flex'; photoUploadArea.style.display='none'; }
         fetchMessages();
+        if(socket) socket.emit('join', { channel: id });
       }
 
-      // Render message
+      function isMessagePinned(id){ return pinnedMessages.includes(String(id)); }
+      function savePins(){ localStorage.setItem(PINS_KEY, JSON.stringify(pinnedMessages)); refreshPinnedUI(); }
+
+      function refreshPinnedUI(){
+        if(!pinnedMessages.length){ pinnedSection.style.display='none'; pinnedList.innerHTML=''; return; }
+        pinnedSection.style.display='block'; pinnedList.innerHTML='';
+        pinnedMessages.forEach(id=>{
+          const item = document.createElement('div'); item.className='pinnedItem'; item.textContent = 'Message ID: ' + id;
+          const btn = document.createElement('button'); btn.textContent='Unpin'; btn.style.marginLeft='auto'; btn.onclick = ()=> togglePin(id);
+          item.appendChild(btn); pinnedList.appendChild(item);
+        });
+      }
+
+      // Message rendering
       function renderMessage(msg){
-        // privacy: if private and not involved skip
         if(msg.privateToId && currentUser && !(String(msg.privateToId) === String(currentUser.id) || String(msg.userId) === String(currentUser.id))) return null;
 
         const container = document.createElement('div');
@@ -222,28 +291,26 @@
         const meta = document.createElement('div'); meta.className='meta';
         const nameSpan = document.createElement('span'); nameSpan.className='name'; nameSpan.textContent = msg.userName || 'Unknown';
         if(msg.nameColor) nameSpan.style.color = msg.nameColor;
-        const timeSpan = document.createElement('span'); timeSpan.className='time'; timeSpan.style.fontSize='12px'; timeSpan.style.color='var(--muted)'; timeSpan.textContent = fmtTime(msg.createdAt || msg.created_at || msg.created);
+        else if(currentUser && msg.userName === currentUser.name && nameColor) nameSpan.style.color = nameColor;
+        const timeSpan = document.createElement('span'); timeSpan.className='time'; timeSpan.style.fontSize='12px'; timeSpan.style.color='var(--muted)'; timeSpan.textContent = fmtTime(msg.createdAt || msg.created);
 
         meta.appendChild(nameSpan);
         meta.appendChild(timeSpan);
 
-        // reply button
         if(currentUser && (!msg.privateToId)){
           const replyBtn = document.createElement('button'); replyBtn.className='replyBtn'; replyBtn.textContent='Reply';
-          replyBtn.onclick = (e)=>{ e.stopPropagation(); setReplyTo(msg); };
+          replyBtn.onclick = (e)=> { e.stopPropagation(); setReplyTo(msg); };
           meta.appendChild(replyBtn);
         }
 
         bubble.appendChild(meta);
 
-        // show quoted reply preview if available
         if(msg.replyTo && msg.replyTo.userName){
-          const r = document.createElement('div'); r.className='replyTag'; r.textContent = `${msg.replyTo.userName}: ${truncate(msg.replyTo.text||msg.replyTo.message,140)}`; bubble.appendChild(r);
+          const r = document.createElement('div'); r.className='replyTag'; r.textContent = `${msg.replyTo.userName}: ${truncate(msg.replyTo.text||msg.replyTo.message||'',140)}`; bubble.appendChild(r);
         }
 
-        // content
         if(msg.imageUrl){
-          const photoDiv = document.createElement('div'); photoDiv.className = 'photoMessage';
+          const photoDiv = document.createElement('div'); photoDiv.className='photoMessage';
           const img = document.createElement('img'); img.src = msg.imageUrl; img.alt = msg.text || 'photo';
           img.onclick = ()=> window.open(img.src, '_blank');
           photoDiv.appendChild(img);
@@ -254,7 +321,6 @@
           bubble.appendChild(photoDiv);
         } else {
           const text = document.createElement('div'); text.className='text';
-          // highlight mentions of current user
           const content = msg.text || msg.message || '';
           if(currentUser && content.includes('@'+currentUser.name)){
             const parts = content.split(new RegExp('(@'+currentUser.name+')','g'));
@@ -265,7 +331,6 @@
                 text.appendChild(document.createTextNode(p));
               }
             });
-            // ping visual
             container.style.outline = '2px solid rgba(88,101,242,0.12)';
             setTimeout(()=> container.style.outline = '', 2500);
             setStatus('You were mentioned by ' + (msg.userName || 'someone'));
@@ -279,16 +344,10 @@
           const pin = document.createElement('div'); pin.style.fontSize='12px'; pin.style.color='var(--muted)'; pin.textContent='📌 Pinned'; bubble.appendChild(pin);
         }
 
-        // layout
         const wrapper = document.createElement('div'); wrapper.style.display='flex'; wrapper.style.gap='12px';
-        if(container.className.includes('me')){
-          wrapper.appendChild(bubble); wrapper.appendChild(avatar);
-        } else {
-          wrapper.appendChild(avatar); wrapper.appendChild(bubble);
-        }
+        if(container.className.includes('me')){ wrapper.appendChild(bubble); wrapper.appendChild(avatar); } else { wrapper.appendChild(avatar); wrapper.appendChild(bubble); }
         container.appendChild(wrapper);
 
-        // context menu for pin/unpin
         container.addEventListener('contextmenu', (e)=>{
           e.preventDefault();
           togglePin(msg.id).catch(()=>{});
@@ -297,11 +356,13 @@
         return container;
       }
 
-      // Fetch messages
+      function truncate(s,n=60){ return s && s.length>n ? s.slice(0,n-1)+'…' : (s||''); }
+
+      // Fetch messages from server
       async function fetchMessages(){
         try{
           const res = await fetch(`/api/messages?channel=${encodeURIComponent(activeChannel)}&limit=200`);
-          if(!res.ok) throw new Error('Fetch messages failed');
+          if(!res.ok) throw new Error('Fetch messages failed: ' + res.status);
           const data = await res.json();
           messagesEl.innerHTML = '';
           const wasBottom = (messagesEl.scrollTop + messagesEl.clientHeight) >= (messagesEl.scrollHeight - 80);
@@ -311,7 +372,10 @@
           }
           if(wasBottom) messagesEl.scrollTop = messagesEl.scrollHeight;
           setStatus('Connected — ' + data.length + ' messages');
-        }catch(e){ setStatus('Error loading messages'); console.error(e); }
+        }catch(e){
+          console.warn(e);
+          setStatus('Could not load messages');
+        }
       }
 
       // Post message
@@ -319,18 +383,17 @@
         if(!currentUser){ setStatus('Set username first'); return; }
         if(!text || !text.trim()) return;
         try{
-          const payload = { clientToken, channel: activeChannel, text: text.trim(), replyToId: replyTo ? replyTo.id : null };
-          const res = await fetch('/api/messages', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          const j = await res.json();
+          const body = { clientToken, channel: activeChannel, text: text.trim(), replyToId: replyTo ? replyTo.id : null };
+          const res = await fetch('/api/messages', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+          const j = await res.json().catch(()=>({}));
           if(!res.ok){ setStatus(j.message || 'Failed to send'); return; }
-          messageInput.value = ''; updateCharCount();
-          clearReply();
-          // optimistic: server will broadcast via socket; we still fetch to ensure canonical state
+          messageInput.value = ''; updateCharCount(); clearReply();
+          // server will broadcast; to be safe fetch if no socket
           if(!socket) await fetchMessages();
         }catch(e){ console.error(e); setStatus('Send failed'); }
       }
 
-      // Upload photo (client-side resize for non-GIFs)
+      // Upload photo
       function isGif(file){ return file.type === 'image/gif' || /\.gif$/i.test(file.name); }
       function fileToDataUrl(file){ return new Promise((res, rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
       function resizeImageDataUrl(dataUrl, maxW=1024, maxH=768){
@@ -352,13 +415,12 @@
         try{
           let dataUrl = await fileToDataUrl(file);
           if(!isGif(file)) dataUrl = await resizeImageDataUrl(dataUrl, 1024, 768);
-          const body = { clientToken, dataUrl, channel: 'photos' };
-          const res = await fetch('/api/uploads/photo', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-          const j = await res.json();
+          const res = await fetch('/api/uploads/photo', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ clientToken, dataUrl, channel: 'photos' }) });
+          const j = await res.json().catch(()=>({}));
           if(!res.ok){ setStatus(j.message || 'Upload failed'); return; }
           setStatus('Photo uploaded');
           photoInput.value = ''; uploadPhotoBtn.disabled = true;
-          await fetchMessages();
+          if(!socket) await fetchMessages();
         }catch(e){ console.error(e); setStatus('Upload failed'); }
       }
 
@@ -366,51 +428,38 @@
       async function togglePin(messageId){
         try{
           const res = await fetch('/api/pins', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ clientToken, channel: activeChannel, messageId }) });
-          const j = await res.json();
+          const j = await res.json().catch(()=>({}));
           if(!res.ok) throw new Error(j.message || 'Pin failed');
           if(j.action === 'pinned') pinnedMessages.push(String(messageId)); else pinnedMessages = pinnedMessages.filter(x=>x !== String(messageId));
           savePins();
-          refreshPinnedUI();
-          await fetchMessages();
+          if(!socket) fetchMessages().catch(()=>{});
         }catch(e){ console.error(e); setStatus('Pin toggle failed'); }
-      }
-      function refreshPinnedUI(){
-        if(!pinnedMessages.length){ pinnedSection.style.display='none'; pinnedList.innerHTML=''; return; }
-        pinnedSection.style.display='block'; pinnedList.innerHTML = '';
-        pinnedMessages.forEach(id=>{
-          const item = document.createElement('div'); item.className='pinnedItem'; item.textContent = 'Message ID: ' + id;
-          const btn = document.createElement('button'); btn.textContent='Unpin'; btn.style.marginLeft='auto'; btn.onclick = ()=>{ togglePin(id); };
-          item.appendChild(btn); pinnedList.appendChild(item);
-        });
       }
 
       // Reply handling
-      function setReplyTo(msg){
-        replyTo = msg;
-        messageInput.placeholder = `Replying to ${msg.userName}: "${truncate(msg.text||msg.message||'',60)}" (Esc to cancel)`;
-        messageInput.focus();
-      }
+      function setReplyTo(msg){ replyTo = msg; messageInput.placeholder = `Replying to ${msg.userName}: "${truncate(msg.text||msg.message||'',60)}" (Esc to cancel)`; messageInput.focus(); }
       function clearReply(){ replyTo = null; messageInput.placeholder = 'Message (Shift+Enter for newline)'; }
       document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') clearReply(); });
 
-      // Name & avatar flows (server-side enforcement)
+      // Name & avatar (server enforced)
       async function registerOrUpdateName(name){
         if(!name) return;
         name = name.trim().slice(0, MAX_NAME_LEN);
         try{
           const res = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ clientToken, name }) });
-          const j = await res.json();
-          if(!res.ok){ if(j.remainingSeconds){ alert('You can change name in ' + Math.ceil(j.remainingSeconds/3600/24) + ' day(s).'); } setStatus(j.message || 'Name change failed'); return; }
+          const j = await res.json().catch(()=>({}));
+          if(!res.ok){ if(j.remainingSeconds) alert('You can change name in ' + Math.ceil(j.remainingSeconds/3600/24) + ' day(s).'); setStatus(j.message || 'Name change failed'); return; }
           currentUser = j.user;
           localStorage.setItem(NAME_CHANGE_KEY, j.user.nameChangedAt || Date.now());
           onUserSet();
           setStatus('Name set: ' + currentUser.name);
         }catch(e){ console.error(e); setStatus('Name set failed'); }
       }
+
       async function changeAvatarDataUrl(dataUrl){
         try{
           const res = await fetch('/api/auth/avatar', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ clientToken, dataUrl }) });
-          const j = await res.json();
+          const j = await res.json().catch(()=>({}));
           if(!res.ok){ if(j.remainingSeconds) alert('You can change avatar in ' + Math.ceil(j.remainingSeconds/3600/24) + ' day(s).'); setStatus(j.message || 'Avatar change failed'); return; }
           currentUser = j.user;
           localStorage.setItem(AVATAR_CHANGE_KEY, j.user.avatarChangedAt || Date.now());
@@ -420,71 +469,51 @@
         }catch(e){ console.error(e); setStatus('Avatar update failed'); }
       }
 
-      // Socket & realtime
+      // Socket initialization safely
       function initSocket(){
-        socket = io(); // same origin
-        socket.on('connect', ()=> setStatus('Connected (realtime)'));
-        socket.on('disconnect', ()=> setStatus('Disconnected (realtime)'));
-        socket.on('message', (msg)=> {
-          // If message belongs to current channel render
-          if(msg.channel === activeChannel) {
-            const el = renderMessage(msg);
-            if(el) messagesEl.appendChild(el);
-            // keep scroll if near bottom
-            messagesEl.scrollTop = messagesEl.scrollHeight;
-          }
-        });
-        socket.on('mention', (payload)=> {
-          // payload: { fromName, messageId, channel, text }
-          if(payload.channel === activeChannel) setStatus('Mentioned by ' + payload.fromName);
-          // optionally show desktop notification
-          if(Notification.permission === 'granted'){
-            new Notification('Mention from ' + payload.fromName, { body: payload.text.slice(0,120) });
-          }
-        });
-        socket.on('presence', (p)=> { updatePlayersUI(p); });
-        // auth on connect
-        if(currentUser) socket.emit('auth', { clientToken });
-        socket.on('connect_error', ()=> setStatus('Realtime connection error'));
+        try{
+          if(typeof io === 'undefined'){ console.warn('Socket.IO client not found'); setStatus('Realtime not available'); return; }
+          socket = io();
+          socket.on('connect', ()=> { setStatus('Connected (realtime)'); if(currentUser) socket.emit('auth', { clientToken }); socket.emit('join', { channel: activeChannel }); });
+          socket.on('disconnect', ()=> setStatus('Disconnected (realtime)'));
+          socket.on('message', (msg)=> {
+            if(msg.channel === activeChannel){
+              const el = renderMessage(msg);
+              if(el) { messagesEl.appendChild(el); messagesEl.scrollTop = messagesEl.scrollHeight; }
+            }
+          });
+          socket.on('mention', (payload)=> {
+            setStatus('Mentioned by ' + payload.fromName);
+            if(Notification.permission === 'granted') new Notification('Mention from ' + payload.fromName, { body: payload.text.slice(0,120) });
+          });
+          socket.on('presence', (p)=> updatePlayersUI(p));
+          socket.on('connect_error', ()=> setStatus('Realtime connection error'));
+        }catch(e){ console.error('Socket init error', e); setStatus('Realtime error'); }
       }
 
-      // Players / presence UI
+      // Players UI
       function updatePlayersUI(list){
         playersListEl.innerHTML = '';
-        // API may return array of { name, online, idle, id, avatar }
         if(!Array.isArray(list)) return;
-        const online = list.filter(p=>p.online || p.id == (currentUser && currentUser.id));
-        const offline = list.filter(p=>!p.online && !p.idle);
+        const online = list.filter(p=>p.online);
         const idle = list.filter(p=>p.idle);
+        const offline = list.filter(p=>!p.online && !p.idle);
 
-        const addGroup = (title, items, cls) => {
+        const addGroup = (title, items) => {
           const h = document.createElement('div'); h.style.color='var(--muted)'; h.style.fontSize='13px'; h.textContent = title + ' ('+items.length+')';
           playersListEl.appendChild(h);
           items.forEach(p=>{
             const it = document.createElement('div'); it.className='player ' + (p.idle? 'idle' : (p.online? 'online':'offline'));
             const dot = document.createElement('span'); dot.className='statusDot';
             const name = document.createElement('div'); name.innerHTML = escapeHtml(p.name) + ((currentUser && p.name === currentUser.name)?' <small style="color:var(--muted)">(you)</small>':'');
-            it.appendChild(dot); it.appendChild(name);
-            playersListEl.appendChild(it);
+            it.appendChild(dot); it.appendChild(name); playersListEl.appendChild(it);
           });
         };
-        addGroup('Online', online, 'online');
-        addGroup('Idle', idle, 'idle');
-        addGroup('Offline', offline, 'offline');
+        addGroup('Online', online);
+        addGroup('Idle', idle);
+        addGroup('Offline', offline);
       }
 
-      // Presence: send visibility to server via socket
-      function updateVisibility(){
-        if(!socket) return;
-        socket.emit('visibility', { idle: document.hidden });
-      }
-      document.addEventListener('visibilitychange', ()=> {
-        updateVisibility();
-        // clientside idle marker update
-        setTimeout(()=> fetchPlayers().catch(()=>{}), 200);
-      });
-
-      // Fetch players snapshot from API
       async function fetchPlayers(){
         try{
           const res = await fetch('/api/users/players');
@@ -494,43 +523,42 @@
         }catch(e){ console.warn(e); }
       }
 
-      // Client registration on load
+      // Toggle pin (calls server; local fallback)
+      async function togglePin(messageId){
+        try{
+          const res = await fetch('/api/pins', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ clientToken, channel: activeChannel, messageId }) });
+          const j = await res.json().catch(()=>({}));
+          if(!res.ok) throw new Error(j.message || 'Pin failed');
+          if(j.action === 'pinned') pinnedMessages.push(String(messageId)); else pinnedMessages = pinnedMessages.filter(x=>x !== String(messageId));
+          savePins();
+          if(!socket) fetchMessages().catch(()=>{});
+        }catch(e){ console.error(e); setStatus('Pin toggle failed'); }
+      }
+
+      // Fetch current user (whoami)
       async function initUserFromServer(){
         try{
           const res = await fetch('/api/auth/whoami', { headers:{ 'X-Client-Token': clientToken } });
-          if(res.status === 404){
-            currentUser = null;
-            usernameBox.style.display = 'flex'; usernameLocked.style.display='none';
-            setStatus('Please set your name');
-            return;
-          }
-          const j = await res.json();
-          if(res.ok){
-            currentUser = j.user;
-            onUserSet();
-            setStatus('Welcome back, ' + currentUser.name);
-          } else {
-            currentUser = null;
-          }
+          if(res.status === 404){ currentUser = null; usernameBox.style.display='flex'; usernameLocked.style.display='none'; setStatus('Choose a name'); return; }
+          const j = await res.json().catch(()=>({}));
+          if(res.ok && j.user){ currentUser = j.user; onUserSet(); setStatus('Welcome back, ' + currentUser.name); } else { currentUser = null; }
         }catch(e){ console.warn(e); currentUser = null; }
       }
 
-      // UI when user set
       function onUserSet(){
         if(!currentUser) return;
         usernameBox.style.display='none'; usernameLocked.style.display='flex'; usernameDisplay.textContent = currentUser.name;
         userAvatarSmall.src = currentUser.avatar || '';
-        // notify socket about auth
-        if(socket) socket.emit('auth', { clientToken });
-        fetchPlayers().catch(()=>{});
+        if(currentUser.nameColor) nameColor = currentUser.nameColor;
+        // apply name color to displayed names where appropriate
+        Array.from(document.querySelectorAll('.meta .name')).forEach(el => { if(el.textContent === currentUser.name) el.style.color = nameColor; });
       }
 
-      // Event wiring
+      // UI bindings
       channelsEl.addEventListener('click', (e)=> {
         const ch = e.target.closest('.channel');
         if(!ch) return;
         setActiveChannelUI(ch.dataset.id);
-        if(socket) socket.emit('join', { channel: ch.dataset.id });
       });
 
       setNameBtn.addEventListener('click', ()=> {
@@ -540,13 +568,10 @@
         registerOrUpdateName(v);
       });
 
-      changeNameBtn.addEventListener('click', async ()=> {
+      changeNameBtn.addEventListener('click', ()=> {
         if(!currentUser){ alert('Set a name first'); return; }
-        // client asks server for change; server enforces weekly
         const newName = prompt('Enter new name (max ' + MAX_NAME_LEN + ' chars):', currentUser.name);
-        if(newName && newName.trim()){
-          registerOrUpdateName(newName.trim().slice(0,MAX_NAME_LEN));
-        }
+        if(newName && newName.trim()) registerOrUpdateName(newName.trim().slice(0,MAX_NAME_LEN));
       });
 
       avatarInput.addEventListener('change', async ()=> {
@@ -554,81 +579,80 @@
         const f = avatarInput.files[0];
         try{
           let dataUrl = await fileToDataUrl(f);
-          // resize small avatar
           if(!isGif(f)) dataUrl = await resizeImageDataUrl(dataUrl, 256, 256);
           await changeAvatarDataUrl(dataUrl);
         }catch(e){ console.error(e); alert('Avatar upload failed'); }
         avatarInput.value = '';
       });
 
-      sendBtn.addEventListener('click', ()=> {
-        postMessage(messageInput.value);
-      });
-
+      sendBtn.addEventListener('click', ()=> { postMessage(messageInput.value); });
       messageInput.addEventListener('input', ()=> {
         updateCharCount();
-        // typing indicator: broadcast in local storage for cross-tab and via socket
-        const map = JSON.parse(localStorage.getItem('notcord_typing_map_v1') || '{}');
+        const map = JSON.parse(localStorage.getItem(TYPING_KEY) || '{}');
         map[activeChannel] = map[activeChannel] || {}; map[activeChannel][currentUser?currentUser.name:''] = Date.now();
-        localStorage.setItem('notcord_typing_map_v1', JSON.stringify(map));
+        localStorage.setItem(TYPING_KEY, JSON.stringify(map));
         if(socket) socket.emit('typing', { channel: activeChannel });
       });
+      messageInput.addEventListener('keydown', (e)=> { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); if(!sendBtn.disabled) sendBtn.click(); } if(e.key==='Escape') clearReply(); });
 
-      messageInput.addEventListener('keydown', (e)=> {
-        if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); if(!sendBtn.disabled) sendBtn.click(); }
-        if(e.key === 'Escape'){ clearReply(); }
-      });
+      photoInput.addEventListener('change', ()=> { uploadPhotoBtn.disabled = !photoInput.files.length; });
+      uploadPhotoBtn.addEventListener('click', ()=> { if(photoInput.files.length) uploadPhoto(photoInput.files[0]); });
 
-      photoInput.addEventListener('change', ()=> {
-        uploadPhotoBtn.disabled = !photoInput.files.length;
-      });
-      uploadPhotoBtn.addEventListener('click', ()=> {
-        if(photoInput.files.length) uploadPhoto(photoInput.files[0]);
-      });
-
-      // Pins UI clear
       clearPinsBtn.addEventListener('click', ()=> { pinnedMessages = []; savePins(); fetchMessages(); });
 
-      // Typing UI from local storage (cross-tab)
-      window.addEventListener('storage', (e)=> {
-        if(e.key === 'notcord_typing_map_v1'){ updateTypingUI(); }
-      });
+      // Typing UI cross-tab
+      window.addEventListener('storage', (e)=> { if(e.key === TYPING_KEY) updateTypingUI(); });
       function updateTypingUI(){
-        const map = JSON.parse(localStorage.getItem('notcord_typing_map_v1') || '{}');
-        const ch = map[activeChannel] || {};
-        const nowTs = Date.now();
+        const map = JSON.parse(localStorage.getItem(TYPING_KEY) || '{}'); const ch = map[activeChannel] || {}; const nowTs = Date.now();
         const typers = Object.keys(ch).filter(u => u && (nowTs - ch[u]) <= TYPING_EXPIRE_MS && (!currentUser || u !== currentUser.name));
-        if(!typers.length) typingIndicatorEl.textContent = '';
-        else typingIndicatorEl.textContent = typers[0] + (typers.length>1 ? (' and ' + (typers.length-1) + ' others are typing...') : ' is typing...');
+        typingIndicatorEl.textContent = typers.length ? (typers[0] + (typers.length>1 ? (' and ' + (typers.length-1) + ' others are typing...') : ' is typing...')) : '';
       }
       setInterval(updateTypingUI, 1500);
-
-      // Fetch players and messages periodically
-      setInterval(()=> fetchPlayers().catch(()=>{}), 5000);
 
       // Character count
       function updateCharCount(){ charCountEl.textContent = (messageInput.value||'').length + ' / 500'; sendBtn.disabled = !(currentUser && (messageInput.value||'').trim()); }
 
-      // Initialization
+      // Theme inputs wiring
+      initThemeInputs();
+      applyTheme();
+      function initThemeInputs(){
+        nameColorInput.value = nameColor;
+        theme1Input.value = theme1;
+        theme2Input.value = theme2;
+        theme3Input.value = theme3;
+      }
+      nameColorInput.addEventListener('input', ()=> { nameColor = nameColorInput.value; localStorage.setItem('notcord_nameColor', nameColor); if(currentUser && currentUser.name) currentUser.nameColor = nameColor; Array.from(document.querySelectorAll('.meta .name')).forEach(el=>{ if(el.textContent=== (currentUser && currentUser.name)) el.style.color = nameColor; })});
+      resetNameColorBtn.addEventListener('click', ()=> { nameColor = '#ffcc00'; nameColorInput.value = nameColor; localStorage.setItem('notcord_nameColor', nameColor); });
+
+      theme1Input.addEventListener('input', ()=> { theme1 = theme1Input.value; localStorage.setItem('notcord_theme1', theme1); applyTheme(); });
+      resetTheme1Btn.addEventListener('click', ()=> { theme1 = '#071226'; theme1Input.value = theme1; localStorage.setItem('notcord_theme1', theme1); applyTheme(); });
+      theme2Input.addEventListener('input', ()=> { theme2 = theme2Input.value; localStorage.setItem('notcord_theme2', theme2); applyTheme(); });
+      resetTheme2Btn.addEventListener('click', ()=> { theme2 = '#07101a'; theme2Input.value = theme2; localStorage.setItem('notcord_theme2', theme2); applyTheme(); });
+      theme3Input.addEventListener('input', ()=> { theme3 = theme3Input.value; localStorage.setItem('notcord_theme3', theme3); applyTheme(); });
+      resetTheme3Btn.addEventListener('click', ()=> { theme3 = '#0b2233'; theme3Input.value = theme3; localStorage.setItem('notcord_theme3', theme3); applyTheme(); });
+
+      // Utility functions reused here
+      function fileToDataUrl(file){ return new Promise((res, rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
+      function isGif(file){ return file.type === 'image/gif' || /\.gif$/i.test(file.name); }
+      function resizeImageDataUrl(dataUrl, maxW=1024, maxH=768){ return new Promise((res, rej)=>{ const img = new Image(); img.onload = ()=>{ let w=img.width,h=img.height; if(w<=maxW && h<=maxH) return res(dataUrl); const ratio=Math.min(maxW/w,maxH/h); const canvas=document.createElement('canvas'); canvas.width=Math.round(w*ratio); canvas.height=Math.round(h*ratio); canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height); res(canvas.toDataURL('image/jpeg',0.85)); }; img.onerror=rej; img.src=dataUrl; }); }
+
+      // Initialization sequence
       (async function init(){
         refreshPinnedUI();
         setActiveChannelUI(activeChannel);
-        await initUserFromServer();
+        await initUserFromServer().catch(()=>{});
         initSocket();
-        if(currentUser) socket.emit('join', { channel: activeChannel });
-        // request notification permission optional
-        if('Notification' in window && Notification.permission === 'default') {
-          try{ await Notification.requestPermission(); }catch(e){}
-        }
-        // initial players/messages fetch
-        await fetchMessages();
-        await fetchPlayers();
-        // update visibility presence
-        if(socket) socket.emit('visibility', { idle: document.hidden });
+        if(currentUser && socket) socket.emit('join', { channel: activeChannel });
+        if('Notification' in window && Notification.permission === 'default'){ try{ await Notification.requestPermission(); }catch(e){} }
+        await fetchMessages().catch(()=>{});
+        await fetchPlayers().catch(()=>{});
+        updateCharCount();
+        // presence: notify server when page hidden/visible
+        document.addEventListener('visibilitychange', ()=> { if(socket) socket.emit('visibility', { idle: document.hidden }); setTimeout(()=>fetchPlayers().catch(()=>{}),200); });
       })();
 
-      // Expose minimal debug
-      window._notcord = { clientToken, currentUser, fetchMessages, fetchPlayers, pinnedMessages };
+      // Expose for debugging
+      window._notcord = { clientToken, currentUser: ()=> currentUser, fetchMessages, fetchPlayers, pinnedMessages };
 
     })();
   </script>
