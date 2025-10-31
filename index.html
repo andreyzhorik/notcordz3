@@ -88,7 +88,6 @@
     .player.offline{opacity:0.6}
     .player .statusDot{width:10px;height:10px;border-radius:50%;margin-right:8px;flex-shrink:0;border:2px solid rgba(0,0,0,0.12)}
     .player.online .statusDot{background:#39d353;box-shadow:0 0 8px rgba(57,211,83,0.12)}
-    .player.idle .statusDot{background:var(--yellow);box-shadow:0 0 8px rgba(247,181,0,0.12)}
     .player.offline .statusDot{background:#a0a0a0}
     .player .playerName{font-weight:600}
     .pinnedArea{border-top:1px dashed rgba(255,255,255,0.03);padding-top:10px;margin-top:8px}
@@ -274,7 +273,6 @@
       const TYPING_KEY = 'notcord_typing_v3';
       const TYPING_EXPIRE_MS = 5000;
       const HEARTBEAT_MS = 5000;
-      const PLAYER_OFFLINE_THRESHOLD_MS = 15000;
 
       // user
       let username = localStorage.getItem('notcord_username') || '';
@@ -574,7 +572,7 @@
         if(containsBadWords(file.name)){ muteUser(username, 120); setStatus('Forbidden file name. You are muted for 2 minutes.'); return; }
         isSending = true; uploadPhotoBtn.disabled = true;
         try{
-          const r = await resizeImageFile(file);
+          const r = await resizeImageFile(file, 1024, 1024);
           if(!r.ok) throw new Error('Resize failed');
           const dataUrl = r.dataUrl;
           const payload = { username, createdAt: new Date().toISOString(), nameColor, imageUrl: dataUrl, message: '' , avatarUrl: avatarDataUrl || null};
@@ -587,25 +585,9 @@
         finally{ isSending = false; uploadPhotoBtn.disabled = false; }
       }
 
-      // players / idle detection
+      // players / online detection (idle removed for performance)
       function normalizePlayerName(p){ return p.name || p.username || p.nick || p.displayName || (p.id?String(p.id):String(p)); }
-      function detectPlayerOnline(p){ try{ if(p.lastSeen){ const last = Date.parse(p.lastSeen); if(!isNaN(last) && (Date.now() - last) <= PLAYER_OFFLINE_THRESHOLD_MS) return true; } }catch(e){} return false; }
-
-      // detect local idle: user is away from tab or no activity for some time but system on => mark idle
-      let lastActivity = Date.now();
-      const IDLE_THRESHOLD = 30 * 1000; // 30s for demo; adjust as needed
-      function markActivity(){ lastActivity = Date.now(); setLocalIdleState(false); }
-      function checkIdleLoop(){
-        const now = Date.now();
-        if(!document.hidden && (now - lastActivity) > IDLE_THRESHOLD){
-          setLocalIdleState(true);
-        }
-        setTimeout(checkIdleLoop, 5000);
-      }
-      window.addEventListener('mousemove', markActivity);
-      window.addEventListener('keydown', markActivity);
-      window.addEventListener('mousedown', markActivity);
-      window.addEventListener('touchstart', markActivity);
+      function detectPlayerOnline(p){ try{ if(p.lastSeen){ const last = Date.parse(p.lastSeen); if(!isNaN(last) && (Date.now() - last) <= 15000) return true; } }catch(e){} return false; }
 
       async function fetchPlayers(){
         try{
@@ -613,24 +595,22 @@
           if(!res.ok) throw new Error('Players fetch failed: '+res.status);
           const data = await res.json();
           if(!Array.isArray(data)){ playersStatusEl.textContent='No players'; playersListEl.innerHTML=''; return; }
-          const online = [], offline = [], idle = [];
+          const online = [], offline = [];
           for(const p of data){
             const name = normalizePlayerName(p);
             const on = detectPlayerOnline(p);
-            // for demo: if p.idle === true mark idle (server may support this); otherwise offline/online
-            if(p.idle) idle.push({name, raw:p});
-            else if(on) online.push({name, raw:p});
+            if(on) online.push({name, raw:p});
             else offline.push({name, raw:p});
           }
           // ensure local user present
           if(username){
             const existsOnline = online.some(x=>x.name===username);
             const existsOffline = offline.some(x=>x.name===username);
-            const existsIdle = idle.some(x=>x.name===username);
-            if(!existsOnline && !existsOffline && !existsIdle) online.unshift({ name:username, raw:{ name:username, lastSeen:new Date().toISOString(), nameColor , idle:false } , local:true });
+            if(!existsOnline && !existsOffline) online.unshift({ name:username, raw:{ name:username, lastSeen:new Date().toISOString(), nameColor , idle:false } , local:true });
           }
 
           playersListEl.innerHTML = '';
+
           const headerOnline = document.createElement('div'); headerOnline.style.color='var(--muted)'; headerOnline.style.fontSize='13px'; headerOnline.textContent = 'Online ('+online.length+')';
           playersListEl.appendChild(headerOnline);
           for(const p of online){
@@ -649,23 +629,6 @@
           }
 
           const spacer = document.createElement('div'); spacer.style.height='8px'; playersListEl.appendChild(spacer);
-
-          const headerIdle = document.createElement('div'); headerIdle.style.color='var(--muted)'; headerIdle.style.fontSize='13px'; headerIdle.textContent = 'Idle ('+idle.length+')';
-          playersListEl.appendChild(headerIdle);
-          for(const p of idle){
-            const item = document.createElement('div'); item.className='player idle';
-            const left = document.createElement('div'); left.style.display='flex'; left.style.alignItems='center';
-            const dot = document.createElement('span'); dot.className='statusDot';
-            const nameSpan = document.createElement('div'); nameSpan.className='playerName'; nameSpan.textContent = p.name;
-            const serverColor = (p.raw && (p.raw.nameColor || p.raw.color)) ? (p.raw.nameColor || p.raw.color) : null;
-            if(serverColor) nameSpan.style.color = serverColor;
-            left.appendChild(dot); left.appendChild(nameSpan);
-            const right = document.createElement('div'); right.style.fontSize='12px'; right.style.color='var(--muted)'; right.textContent='idle';
-            item.appendChild(left); item.appendChild(right);
-            playersListEl.appendChild(item);
-          }
-
-          const spacer2 = document.createElement('div'); spacer2.style.height='8px'; playersListEl.appendChild(spacer2);
 
           const headerOff = document.createElement('div'); headerOff.style.color='var(--muted)'; headerOff.style.fontSize='13px'; headerOff.textContent = 'Offline ('+offline.length+')';
           playersListEl.appendChild(headerOff);
@@ -705,12 +668,12 @@
         }catch(e){ console.warn('upsertLocalPlayer', e); } finally{ fetchPlayers().catch(()=>{}); }
       }
 
-      async function setLocalPlayerOnlineState(isOnline, idle=false){
+      async function setLocalPlayerOnlineState(isOnline){
         if(!localPlayerId) return;
         try{
           const cur = await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'GET', null);
           if(!cur) return;
-          const updated = { ...cur, online: !!isOnline, lastSeen: new Date().toISOString(), name: username || cur.name, nameColor: nameColor || cur.nameColor, avatarUrl: avatarDataUrl || cur.avatarUrl, idle: !!idle };
+          const updated = { ...cur, online: !!isOnline, lastSeen: new Date().toISOString(), name: username || cur.name, nameColor: nameColor || cur.nameColor, avatarUrl: avatarDataUrl || cur.avatarUrl };
           await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', updated);
         }catch(e){ console.warn('setLocalPlayerOnlineState', e); } finally{ fetchPlayers().catch(()=>{}); }
       }
@@ -719,7 +682,7 @@
         stopHeartbeat();
         if(!username || !localPlayerId) return;
         heartbeatInterval = setInterval(async ()=>{
-          try{ await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { lastSeen: new Date().toISOString(), online:true, name: username, nameColor, avatarUrl: avatarDataUrl, idle: false }); }catch(e){ console.warn('heartbeat', e); }
+          try{ await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { lastSeen: new Date().toISOString(), online:true, name: username, nameColor, avatarUrl: avatarDataUrl }); }catch(e){ console.warn('heartbeat', e); }
         }, HEARTBEAT_MS);
       }
       function stopHeartbeat(){ if(heartbeatInterval){ clearInterval(heartbeatInterval); heartbeatInterval = null; } }
@@ -754,6 +717,8 @@
       channelsEl.addEventListener('click', (e)=>{
         const ch = e.target.closest('.channel');
         if(!ch) return;
+        // Immediately reflect UI change for snappier UX
+        Array.from(channelsEl.children).forEach(c => c.classList.toggle('active', c.dataset.id === ch.dataset.id));
         setActiveChannel(ch.dataset.id).catch(()=>{});
       });
 
@@ -871,8 +836,9 @@
         channelTitleEl.textContent = '# ' + id;
         updateInputArea();
         if(polling) clearInterval(polling);
+        // Immediately fetch messages and use a faster poll interval for snappy updates
         await fetchMessages();
-        if(id !== 'photos') polling = setInterval(fetchMessages, 4000);
+        if(id !== 'photos') polling = setInterval(fetchMessages, 2000); // faster polling
       }
 
       function cleanupTypingMap(){
@@ -888,22 +854,14 @@
         // load avatar
         if(avatarDataUrl) renderAvatarToEl(avatarDataUrl, avatarDisplay);
         if(username){ usernameBox.style.display='none'; usernameLocked.style.display='flex'; usernameDisplay.textContent = username; nameMeta.textContent = avatarDataUrl? 'Avatar set' : 'No avatar'; await upsertLocalPlayer(); await setLocalPlayerOnlineState(true); startHeartbeat(); } else { usernameBox.style.display='flex'; usernameLocked.style.display='none'; }
-        await setActiveChannel(activeChannel); await fetchPlayers(); if(playersPolling) clearInterval(playersPolling); playersPolling = setInterval(fetchPlayers, 5000);
+        await setActiveChannel(activeChannel); await fetchPlayers(); if(playersPolling) clearInterval(playersPolling); playersPolling = setInterval(fetchPlayers, 4000);
         setInterval(cleanupTypingMap, 2000);
-        setStatus('Connected (polling every 4s)');
+        setStatus('Connected (fast mode)');
         renderPinned();
-        checkIdleLoop();
       }
       init();
 
-      // visibility/idle handling
-      async function setLocalIdleState(isIdle){
-        if(!localPlayerId) return;
-        try{
-          await setLocalPlayerOnlineState(!isIdle, isIdle);
-        }catch(e){}
-      }
-
+      // visibility handling simplified (idle removed)
       document.addEventListener('visibilitychange', async ()=>{
         if(!username) return;
         if(document.hidden){
