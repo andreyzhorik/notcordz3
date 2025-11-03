@@ -51,8 +51,9 @@
     .status{color:var(--muted);font-size:13px}
     .typing{color:var(--muted);font-size:12px;height:18px}
     .messages{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;min-height:0;background:transparent}
-    .pinnedCenter{ position:absolute; left:50%; transform:translateX(-50%); top:10px; z-index:30; background:var(--pin-bg); border:1px solid var(--pin-accent); padding:10px 14px; border-radius:12px; color:var(--text); display:flex; gap:10px; align-items:center; justify-content:center; max-width:70%; text-align:center; box-shadow:0 10px 30px rgba(2,6,23,0.6); }
-    .pinTitle{font-weight:800;color:var(--accent); margin-right:8px}
+    .pinnedCenter{ position:absolute; left:50%; transform:translateX(-50%); top:10px; z-index:30; background:var(--pin-bg); border:1px solid var(--pin-accent); padding:10px 14px; border-radius:12px; color:var(--text); display:flex; gap:10px; align-items:center; justify-content:center; max-width:70%; text-align:center; box-shadow:0 10px 30px rgba(2,6,23,0.6); transition:opacity .2s ease, transform .15s ease; }
+    .pinnedCenter .pin-close{ background: transparent; border: none; color: var(--muted); cursor: pointer; margin-left: 8px; font-weight: 700; }
+    .pinnedCenter .pinTitle{font-weight:800;color:var(--accent); margin-right:8px}
     .message{display:flex;gap:12px;align-items:flex-start;max-width:85%}
     .message.me{margin-left:auto;justify-content:flex-end}
     .bubble{
@@ -295,6 +296,10 @@
       let pinned = JSON.parse(localStorage.getItem('notcord_pinned') || '[]');
       const muteMap = new Map();
 
+      // Track notifications already sent (to ensure one notification per mention message)
+      const notifiedKey = 'notcord_notified_messages';
+      let notifiedSet = new Set(JSON.parse(localStorage.getItem(notifiedKey) || '[]'));
+
       // --- Helpers ---
       function setStatus(txt){ statusEl.textContent = txt; }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -348,6 +353,15 @@
       }
       pinClearBtn.addEventListener('click', ()=> { pinned = []; savePinned(); });
 
+      // Update the top-center pinned display
+      function showPinnedCenter(text){
+        pinnedCenterEl.style.display = 'flex';
+        // add dismiss button so user can hide it locally
+        pinnedCenterEl.innerHTML = `<div class="pinTitle">Pinned</div><div style="font-weight:700;color:var(--text);max-width:70%">${escapeHtml(text)}</div><button class="pin-close" title="Dismiss">×</button>`;
+        const closeBtn = pinnedCenterEl.querySelector('.pin-close');
+        closeBtn.addEventListener('click', ()=> { pinnedCenterEl.style.display = 'none'; });
+      }
+
       // Fetch public pinned message and show top center
       async function fetchPublicPinned(){
         try{
@@ -358,8 +372,7 @@
           if(Array.isArray(data) && data.length) p = data[0];
           else if(typeof data === 'object' && data) p = data;
           if(p && (p.message || p.text || p.content || p.title)){
-            pinnedCenterEl.style.display = 'flex';
-            pinnedCenterEl.innerHTML = `<div class="pinTitle">Pinned</div><div style="font-weight:700;color:var(--text);max-width:70%">${escapeHtml(p.message || p.text || p.content || p.title)}</div>`;
+            showPinnedCenter(p.message || p.text || p.content || p.title);
           } else {
             pinnedCenterEl.style.display = 'none';
             pinnedCenterEl.innerHTML = '';
@@ -368,6 +381,19 @@
           pinnedCenterEl.style.display = 'none';
           pinnedCenterEl.innerHTML = '';
         }
+      }
+
+      // Post a public pinned message to the PINS_PUBLIC_API
+      async function postPublicPin(payload){
+        try{
+          const r = await fetch(PINS_PUBLIC_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          if(r.ok){
+            // after posting, refresh public pin to ensure everyone sees it
+            await fetchPublicPinned();
+            return true;
+          }
+        }catch(e){ console.warn('postPublicPin', e); }
+        return false;
       }
 
       // --- Message rendering ---
@@ -396,11 +422,11 @@
         const timeEl = document.createElement('span'); timeEl.className = 'time'; timeEl.textContent = formatTime(msg.createdAt || msg.created_at || msg.timestamp || msg.time || '');
         meta.appendChild(nameEl); meta.appendChild(timeEl);
 
-        // pin button
+        // pin button (now also posts to public pinned endpoint so pinned message is the same for everyone)
         const pinBtn = document.createElement('button');
         pinBtn.textContent = 'Pin';
         pinBtn.style.cssText = 'background:transparent;border:none;color:var(--muted);cursor:pointer;margin-left:8px';
-        pinBtn.onclick = (e)=>{
+        pinBtn.onclick = async (e)=>{
           e.stopPropagation();
           const id = msg.id || msg.createdAt || ('local-'+Date.now());
           if(!pinned.some(p=>p.id===id)){
@@ -408,6 +434,12 @@
             if(pinned.length>20) pinned.pop();
             savePinned();
           }
+          // prepare payload for public pin - keep it minimal and stable
+          const payload = { id, username: author, message: msg.message || msg.text || '', createdAt: msg.createdAt || new Date().toISOString() };
+          // attempt to post to public pins (best-effort), don't block UI
+          postPublicPin(payload).catch(()=>{ /* best-effort */ });
+          // show immediately for the current user
+          showPinnedCenter(payload.message);
         };
         meta.appendChild(pinBtn);
 
@@ -485,23 +517,37 @@
         }catch(e){ console.warn('trimServerIfNeeded', e); }
       }
 
-      // Mention notification using Notification API
-      async function sendMentionNotification(msg){
+      // Mention notification using Notification API - send once per message
+      async function sendMentionNotificationOnce(msg){
         try{
           if(!username) return;
           if(!("Notification" in window)) return;
+          // derive a stable id for the message for tracking
+          const mid = msg.id || (msg.createdAt ? (msg.createdAt + '::' + (msg.username||'')) : (msg.message ? ('hash::'+hashString(msg.message+msg.createdAt)) : String(Date.now())));
+          if(notifiedSet.has(mid)) return; // already notified for this message
+          // request permission if needed
           if(Notification.permission === 'granted'){
             const title = `@${username} mentioned by ${msg.username||'Someone'}`;
             const body = (msg.message||'').replace(/\n/g,' ');
             const n = new Notification(title, { body, icon: (msg.avatarUrl || avatarDataUrl) });
             n.onclick = ()=> window.focus();
+            // record as sent
+            notifiedSet.add(mid);
+            localStorage.setItem(notifiedKey, JSON.stringify(Array.from(notifiedSet)));
           } else if(Notification.permission !== 'denied'){
             const p = await Notification.requestPermission();
             if(p === 'granted'){
-              sendMentionNotification(msg);
+              sendMentionNotificationOnce(msg);
             }
           }
         }catch(e){ console.warn('notify', e); }
+      }
+
+      // simple (fast) string hash for fallback id generation
+      function hashString(str){
+        let h = 0;
+        for(let i=0;i<str.length;i++){ h = ((h<<5)-h) + str.charCodeAt(i); h |= 0; }
+        return String(h >>> 0);
       }
 
       // Fetch messages and render; handle trimming and mentions
@@ -540,11 +586,11 @@
             const el = renderMessage(m, username);
             if(el){
               messagesEl.appendChild(el);
-              // mentions
+              // mentions: highlight and notify once
               if(username && (m.message||'').toLowerCase().includes('@'+username.toLowerCase()) && (m.username !== username)){
                 el.style.boxShadow = '0 6px 30px rgba(88,101,242,0.08)';
                 setTimeout(()=> el.style.boxShadow = '', 1600);
-                sendMentionNotification(m);
+                sendMentionNotificationOnce(m);
               }
             }
           }
