@@ -3,52 +3,72 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>notcord — multi-channel (updated)</title>
+  <title>notcord 2.0</title>
   <style>
     :root{
       --theme-1: #071226;
       --theme-2: #07101a;
-      --theme-3: #0b2233;    /* chat bubbles & logo */ 
+      --theme-3: #0b2233;
       --muted: #9aa4b2;
       --accent: #5865f2;
       --me-bg: #2b3440;
       --border: rgba(255,255,255,0.06);
       --text: #e6eef6;
-      --yellow: #f7b500;
+      --pin-bg: rgba(88,101,242,0.08);
+      --pin-accent: rgba(88,101,242,0.18);
     }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Helvetica,Arial;color:var(--text);
       background:linear-gradient(180deg,var(--theme-1) 0%, var(--theme-2) 100%);
       -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
     }
-    .app { width:100%; height:100vh; display:grid; grid-template-columns:260px 1fr 260px; overflow:hidden; gap:10px; padding:10px; }
-    .sidebar{ padding:14px; display:flex; flex-direction:column; gap:12px; height:100vh; overflow:auto; background:linear-gradient(180deg,var(--theme-1),var(--theme-2)); border-radius:12px; border-right:1px solid var(--border) }
-    .brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:18px}
-    .brand .dot{width:28px;height:28px;border-radius:8px;background:var(--theme-2);box-shadow:0 8px 26px rgba(11,34,51,0.45);display:flex;align-items:center;justify-content:center;font-weight:800}
-    .brand .name{color:var(--theme-3);font-weight:800;font-size:18px}
+    .app { width:100%; height:100vh; display:grid; grid-template-columns:260px 1fr 300px; overflow:hidden; gap:12px; padding:12px; }
+    .sidebar{ padding:14px; display:flex; flex-direction:column; gap:12px; height:100vh; overflow:auto; background:linear-gradient(180deg,var(--theme-1),var(--theme-2)); border-radius:14px; border-right:1px solid var(--border) }
+    .brand{display:flex;gap:10px;align-items:center;font-weight:800;font-size:18px}
+    .brand .dot{width:34px;height:34px;border-radius:10px;background:var(--theme-2);box-shadow:0 10px 30px rgba(11,34,51,0.45);display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--theme-3)}
     .usernameBox{display:flex;gap:8px;align-items:center}
     .usernameBox input{flex:1;padding:10px 12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:inherit;outline:none}
-    .usernameBox button{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
+    .usernameBox button{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:linear-gradient(90deg,var(--accent),#4458f7);color:white;cursor:pointer}
     .usernameLocked{display:flex;gap:8px;align-items:center;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid var(--border);font-weight:600;overflow:hidden}
     .usernameLocked .avatar{width:36px;height:36px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center}
     .channels{margin-top:6px;display:flex;flex-direction:column;gap:6px}
-    .channel{padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer;border:1px solid transparent;display:flex;justify-content:space-between;align-items:center}
+    .channel{padding:8px 10px;border-radius:10px;color:var(--muted);cursor:pointer;border:1px solid transparent;display:flex;justify-content:space-between;align-items:center;font-weight:600}
     .channel:hover{background:rgba(255,255,255,0.01)}
-    .channel.active{background:linear-gradient(90deg, rgba(88,101,242,0.12), rgba(88,101,242,0.02));color:var(--text);border-color:rgba(88,101,242,0.12)}
+    .channel.active{background:linear-gradient(90deg, rgba(88,101,242,0.14), rgba(88,101,242,0.02));color:var(--text);border-color:var(--pin-accent)}
     .settings{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:8px;border-top:1px solid var(--border)}
     .settings label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
     .settings input[type="color"]{width:48px;height:32px;padding:0;border:none;background:transparent;cursor:pointer}
     .settings .toggleBtn{padding:8px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer}
+
     /* CHAT */
-    .chatPanel{display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);border-radius:12px;padding:10px}
+    .chatPanel{display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);border-radius:14px;padding:10px; position:relative}
     .chatBox{display:flex;flex-direction:column;height:100%;min-height:0}
-    .header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:transparent}
+    .header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:transparent;border-radius:8px}
     .header h2{margin:0;font-size:18px}
     .header .spacer{flex:1}
-    .header .right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
     .status{color:var(--muted);font-size:13px}
-    .typing{color:var(--muted);font-size:12px;height:18px}
-    .messages{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;min-height:0;background:transparent}
+    .messages{flex:1;overflow:auto;padding:12px 20px 20px 20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;min-height:0;background:transparent;position:relative}
+    /* pinned top center */
+    .pinnedCenter{
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      top:8px;
+      z-index:20;
+      background:var(--pin-bg);
+      border:1px solid var(--pin-accent);
+      padding:10px 14px;
+      border-radius:12px;
+      color:var(--text);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      box-shadow:0 10px 40px rgba(8,10,20,0.6);
+      max-width:70%;
+      justify-content:center;
+      text-align:center;
+    }
+    .pinnedCenter .pinTitle{font-weight:800;margin-right:8px;color:var(--accent)}
     .message{display:flex;gap:12px;align-items:flex-start;max-width:85%}
     .message.me{margin-left:auto;justify-content:flex-end}
     .bubble{
@@ -57,51 +77,43 @@
       padding:10px 12px;border-radius:12px;display:flex;flex-direction:column;gap:8px;word-break:break-word;
       border-left:4px solid rgba(0,0,0,0.08);
       box-shadow:0 8px 28px rgba(2,6,23,0.6);
-      max-width:560px;
+      max-width:680px;
       position:relative;
     }
-    .message.me .bubble{
-      background:var(--theme-3);
-      border-left-color: var(--accent);
-      transform: translateY(0);
-    }
     .meta{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
-    .meta .name{font-weight:700}
+    .meta .name{font-weight:800}
     .meta .time{font-size:12px;color:var(--muted)}
     .text{white-space:pre-wrap;color:inherit;font-size:15px;word-break:break-word;overflow-wrap:break-word}
-    .privateTag{font-size:12px;color:#ffd980;margin-left:8px}
-    .photoMessage img { max-width: 100%; height:auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor:pointer; transition:transform .15s; display:block }
-    .photoMessage img:hover{ transform: scale(1.03) }
-    .inputArea{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
-    .inputArea textarea{flex:1;min-height:44px;max-height:160px;resize:none;padding:10px;border-radius:10px;background:transparent;border:1px solid var(--border);color:inherit;outline:none}
-    .controls{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:120px}
+    .photoMessage img { max-width: 100%; height:auto; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); cursor:pointer; transition:transform .12s; display:block }
+    .photoMessage img:hover{ transform: scale(1.02) }
+    .inputArea{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);border-radius:8px}
+    .inputArea textarea{flex:1;min-height:52px;max-height:160px;resize:none;padding:12px;border-radius:12px;background:transparent;border:1px solid var(--border);color:inherit;outline:none}
+    .controls{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:140px}
     .charCount{font-size:12px;color:var(--muted)}
-    .sendBtn{background:var(--accent);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+    .sendBtn{background:linear-gradient(90deg,var(--accent),#4458f7);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700;box-shadow:0 8px 20px rgba(68,88,247,0.12)}
     .sendBtn:disabled{opacity:0.6;cursor:default}
-    .photoUploadArea { padding:12px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:center; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent) }
+    .photoUploadArea { padding:12px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:center; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent); border-radius:8px }
     .photoUploadArea input[type=file]{ flex:1 }
-    .photoUploadArea button{ background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer }
-    .playersPanel{background:linear-gradient(180deg,var(--theme-1),var(--theme-2));border-left:1px solid var(--border);padding:14px;display:flex;flex-direction:column;gap:12px;height:100vh;overflow:auto;border-radius:12px}
+    .photoUploadArea button{ background:linear-gradient(90deg,var(--accent),#4458f7); color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer }
+    .playersPanel{background:linear-gradient(180deg,var(--theme-1),var(--theme-2));border-left:1px solid var(--border);padding:14px;display:flex;flex-direction:column;gap:12px;height:100vh;overflow:auto;border-radius:14px}
     .playersPanel h3{margin:0;font-size:15px;color:var(--muted)}
     .playersList{display:flex;flex-direction:column;gap:6px;overflow:auto}
     .player{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid transparent;color:var(--text)}
-    .player.offline{opacity:0.6}
     .player .statusDot{width:10px;height:10px;border-radius:50%;margin-right:8px;flex-shrink:0;border:2px solid rgba(0,0,0,0.12)}
     .player.online .statusDot{background:#39d353;box-shadow:0 0 8px rgba(57,211,83,0.12)}
     .player.offline .statusDot{background:#a0a0a0}
     .player .playerName{font-weight:600}
     .pinnedArea{border-top:1px dashed rgba(255,255,255,0.03);padding-top:10px;margin-top:8px}
-    .pin{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;border:1px solid var(--border);display:flex;gap:8px;align-items:flex-start}
-    .pin .meta{font-size:13px}
-    .pin .closePin{margin-left:auto;background:transparent;border:none;color:var(--muted);cursor:pointer}
-    @media (max-width:980px){ .app{grid-template-columns:200px 1fr 140px} }
+    @media (max-width:980px){ .app{grid-template-columns:200px 1fr 160px} }
     @media (max-width:720px){ .app{grid-template-columns:1fr} .sidebar,.playersPanel{display:none} }
+    /* mention highlight */
+    .mention { background: rgba(88,101,242,0.06); padding:2px 6px; border-radius:6px; font-weight:700; color:var(--accent); }
   </style>
 </head>
 <body>
   <div class="app" id="app">
     <aside class="sidebar" id="sidebar">
-      <div class="brand"><div class="dot" aria-hidden>NC</div><div class="name">notcord</div></div>
+      <div class="brand"><div class="dot" aria-hidden>NC</div><div style="font-weight:800">notcord</div></div>
 
       <div id="usernameSection">
         <div class="usernameBox" id="usernameBox">
@@ -125,7 +137,6 @@
       <div class="channels" id="channels">
         <div class="channel active" data-id="general" role="button"># general</div>
         <div class="channel" data-id="photos" role="button"># photos</div>
-        <!-- # announcements and # general 2 removed as requested -->
       </div>
 
       <div class="settings" aria-label="Appearance settings">
@@ -134,22 +145,6 @@
             <input type="color" id="nameColor" title="Name color" />
             <div style="flex:1"></div>
             <button id="resetNameColor" class="toggleBtn">Reset</button>
-          </div>
-        </label>
-
-        <label>Theme color 1
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="color" id="themeColor1" title="Theme color 1" />
-            <div style="flex:1"></div>
-            <button id="resetTheme1" class="toggleBtn">Reset</button>
-          </div>
-        </label>
-
-        <label>Theme color 2
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="color" id="themeColor2" title="Theme color 2" />
-            <div style="flex:1"></div>
-            <button id="resetTheme2" class="toggleBtn">Reset</button>
           </div>
         </label>
 
@@ -162,7 +157,7 @@
         </label>
 
         <div style="font-size:12px;color:var(--muted);padding-top:6px">
-          Username/Avatar change limited to once per 7 days. Use "@name" to ping. Pinned messages shown on the right.
+          Username/Avatar change limited to once per 7 days. Use "@name" to ping. Pinned message shown top center for everyone.
         </div>
       </div>
     </aside>
@@ -174,9 +169,10 @@
           <div class="spacer"></div>
           <div class="right">
             <div id="status" class="status">Connecting...</div>
-            <div id="typingIndicator" class="typing"></div>
           </div>
         </div>
+
+        <div id="pinnedCenterHolder"></div>
 
         <div class="messages" id="messages" role="log" aria-atomic="false"></div>
 
@@ -203,7 +199,7 @@
 
       <div class="pinnedArea" id="pinnedArea">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:13px;color:var(--muted)">Pinned</div>
+          <div style="font-size:13px;color:var(--muted)">Local Pins</div>
           <button id="pinClearBtn" class="toggleBtn">Clear</button>
         </div>
         <div id="pinsList" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
@@ -213,21 +209,21 @@
 
   <script>
     (function(){
-      // Channel endpoints (removed announcements and general-2)
+      // Endpoints
       const CHANNELS = {
         general: 'https://68e839b2f2707e6128ca35e1.mockapi.io/chat',
         photos: 'https://68eeed86b06cc802829ba196.mockapi.io/photos'
       };
       const PLAYERS_API = 'https://68e839b2f2707e6128ca35e1.mockapi.io/players';
+      const PINS_PUBLIC_API = 'https://6907fcb5b49bea95fbf20cbc.mockapi.io/pined'; // public pinned message endpoint
 
-      const BAD_WORDS = ['fuck','bitch','nigger','tun tun tun sahur','нахуй','гей','gay','хуета','пиздец','еблет','блять'];
+      const BAD_WORDS = ['fuck','bitch','nigger','tun tun tun sahur','нахуй','гей','gay','хуета'];
 
       // UI refs
       const channelsEl = document.getElementById('channels');
       const channelTitleEl = document.getElementById('channelTitle');
       const messagesEl = document.getElementById('messages');
       const statusEl = document.getElementById('status');
-      const typingIndicatorEl = document.getElementById('typingIndicator');
       const messageInput = document.getElementById('messageInput');
       const sendBtn = document.getElementById('sendBtn');
       const charCountEl = document.getElementById('charCount');
@@ -248,12 +244,8 @@
       const nameMeta = document.getElementById('nameMeta');
 
       const nameColorInput = document.getElementById('nameColor');
-      const themeColor1Input = document.getElementById('themeColor1');
-      const themeColor2Input = document.getElementById('themeColor2');
       const themeColor3Input = document.getElementById('themeColor3');
       const resetNameColorBtn = document.getElementById('resetNameColor');
-      const resetTheme1Btn = document.getElementById('resetTheme1');
-      const resetTheme2Btn = document.getElementById('resetTheme2');
       const resetTheme3Btn = document.getElementById('resetTheme3');
 
       const playersListEl = document.getElementById('playersList');
@@ -261,6 +253,8 @@
 
       const pinsListEl = document.getElementById('pinsList');
       const pinClearBtn = document.getElementById('pinClearBtn');
+
+      const pinnedCenterHolder = document.getElementById('pinnedCenterHolder');
 
       // state
       let activeChannel = localStorage.getItem('notcord_channel') || 'general';
@@ -277,44 +271,27 @@
       // user
       let username = localStorage.getItem('notcord_username') || '';
       let nameColor = localStorage.getItem('notcord_nameColor') || '#ffcc00';
-      let themeColor1 = localStorage.getItem('notcord_theme1') || '#071226';
-      let themeColor2 = localStorage.getItem('notcord_theme2') || '#07101a';
       let themeColor3 = localStorage.getItem('notcord_theme3') || '#0b2233';
-      let accentColor = localStorage.getItem('notcord_accent') || themeColor1;
+      let accentColor = localStorage.getItem('notcord_accent') || '#5865f2';
       let localPlayerId = localStorage.getItem('notcord_playerId') || null;
 
-      // name/avatar change cooldowns (ms)
+      // cooldowns
       const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
       let lastNameChange = Number(localStorage.getItem('notcord_lastNameChange') || 0);
       let lastAvatarChange = Number(localStorage.getItem('notcord_lastAvatarChange') || 0);
       let avatarDataUrl = localStorage.getItem('notcord_avatar') || null;
 
-      // pinned messages (store minimal data)
+      // pinned messages (local)
       let pinned = JSON.parse(localStorage.getItem('notcord_pinned') || '[]');
 
-      // mute map
       const muteMap = new Map();
 
       function setStatus(txt){ statusEl.textContent = txt; }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
       function formatTime(iso){ try{ const d=new Date(iso); if(isNaN(d)) return ''; return d.toLocaleString([], {hour:'2-digit', minute:'2-digit'}); }catch(e){return ''} }
 
-      function applyTheme(){ document.documentElement.style.setProperty('--theme-1', themeColor1); document.documentElement.style.setProperty('--theme-2', themeColor2); document.documentElement.style.setProperty('--theme-3', themeColor3); document.documentElement.style.setProperty('--accent', accentColor || themeColor1); }
-      function initializeAppearanceInputs(){ nameColorInput.value = nameColor; themeColor1Input.value = themeColor1; themeColor2Input.value = themeColor2; themeColor3Input.value = themeColor3; }
-
-      // Typing indicator (localStorage)
-      function readTypingMap(){ try{ return JSON.parse(localStorage.getItem(TYPING_KEY)||'{}'); }catch(e){ return {}; } }
-      function writeTypingMap(m){ try{ localStorage.setItem(TYPING_KEY, JSON.stringify(m)); }catch(e){} }
-      function updateTypingUI(){
-        const map = readTypingMap();
-        const channelMap = map[activeChannel] || {};
-        const now = Date.now();
-        const typers = Object.keys(channelMap).filter(u => u !== username && (now - channelMap[u]) <= TYPING_EXPIRE_MS);
-        if(!typers.length) typingIndicatorEl.textContent = '';
-        else if(typers.length === 1) typingIndicatorEl.textContent = typers[0] + ' is typing...';
-        else typingIndicatorEl.textContent = typers[0] + ' and ' + (typers.length-1) + ' others are typing...';
-      }
-      window.addEventListener('storage', (e)=> { if(e.key === TYPING_KEY) updateTypingUI(); });
+      function applyTheme(){ document.documentElement.style.setProperty('--theme-3', themeColor3); document.documentElement.style.setProperty('--accent', accentColor); }
+      function initializeAppearanceInputs(){ nameColorInput.value = nameColor; themeColor3Input.value = themeColor3; }
 
       function isUserMuted(user){
         const t = muteMap.get(user);
@@ -330,18 +307,19 @@
         return BAD_WORDS.some(w => w && lower.includes(w));
       }
 
-      // pinned management
-      function savePinned(){ localStorage.setItem('notcord_pinned', JSON.stringify(pinned)); renderPinned(); }
-      function renderPinned(){
+      // pinned UI
+      function savePinned(){ localStorage.setItem('notcord_pinned', JSON.stringify(pinned)); renderLocalPinned(); }
+      function renderLocalPinned(){
         pinsListEl.innerHTML = '';
         for(const p of pinned){
           const div = document.createElement('div'); div.className = 'pin';
-          const meta = document.createElement('div'); meta.className = 'meta';
+          div.style.background='rgba(255,255,255,0.02)'; div.style.padding='8px'; div.style.borderRadius='8px'; div.style.display='flex'; div.style.justifyContent='space-between'; div.style.alignItems='center';
+          const meta = document.createElement('div'); meta.style.display='flex'; meta.style.flexDirection='column';
           const name = document.createElement('div'); name.style.fontWeight='700'; name.textContent = p.username;
-          const time = document.createElement('div'); time.style.fontSize='12px'; time.style.color='var(--muted)'; time.textContent = formatTime(p.createdAt);
-          const text = document.createElement('div'); text.style.marginTop='6px'; text.textContent = p.message || '';
-          meta.appendChild(name); meta.appendChild(time); meta.appendChild(text);
+          const text = document.createElement('div'); text.style.fontSize='13px'; text.style.color='var(--muted)'; text.textContent = p.message || '';
+          meta.appendChild(name); meta.appendChild(text);
           const btn = document.createElement('button'); btn.className='closePin'; btn.textContent='Unpin';
+          btn.style.background='transparent'; btn.style.border='none'; btn.style.color='var(--muted)'; btn.style.cursor='pointer';
           btn.onclick = ()=>{ pinned = pinned.filter(x=>x.id !== p.id); savePinned(); };
           div.appendChild(meta); div.appendChild(btn);
           pinsListEl.appendChild(div);
@@ -349,7 +327,7 @@
       }
       pinClearBtn.addEventListener('click', ()=> { pinned = []; savePinned(); });
 
-      // render message with avatar/name color, reply preview, pin button and @ highlighting
+      // render message with mention highlighting & reply support & pin button
       function renderMessage(msg, localUser){
         if(msg.privateTo && !(msg.privateTo === localUser || msg.username === localUser)) return null;
         const container = document.createElement('div');
@@ -360,7 +338,6 @@
         bubble.className = 'bubble';
 
         const meta = document.createElement('div'); meta.className = 'meta';
-        // avatar (if provided on message)
         if(msg.avatarUrl){
           const av = document.createElement('img');
           av.src = msg.avatarUrl;
@@ -383,29 +360,18 @@
         pinBtn.style.cssText = 'background:transparent;border:none;color:var(--muted);cursor:pointer;margin-left:8px';
         pinBtn.onclick = (e)=>{
           e.stopPropagation();
-          // store minimal pin info; ensure unique id
           const id = msg.id || msg.createdAt || ('local-'+Date.now());
           if(!pinned.some(p=>p.id===id)){
-            pinned.unshift({ id, username: author, message: msg.message || '', createdAt: msg.createdAt || new Date().toISOString() });
+            pinned.unshift({ id, username: author, message: msg.message || msg.text || '', createdAt: msg.createdAt || new Date().toISOString() });
             if(pinned.length>20) pinned.pop();
             savePinned();
           }
         };
         meta.appendChild(pinBtn);
 
-        // reply button (shows quoted message in input)
-        if(!isMe && !msg.privateTo){
-          const replyBtn = document.createElement('button');
-          replyBtn.className = 'replyBtn';
-          replyBtn.textContent = 'Reply';
-          replyBtn.style.cssText = 'background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;margin-left:8px';
-          replyBtn.onclick = (e) => { e.stopPropagation(); setReplyTo(msg); };
-          meta.appendChild(replyBtn);
-        }
-
         bubble.appendChild(meta);
 
-        // reply preview if message contains replyTo object (rendered as small quoted box)
+        // reply preview if message contains replyTo object
         if(msg.replyTo && typeof msg.replyTo === 'object'){
           const quote = document.createElement('div');
           quote.style.fontSize='13px'; quote.style.color='var(--muted)'; quote.style.borderLeft='2px solid rgba(255,255,255,0.03)'; quote.style.padding='6px'; quote.style.borderRadius='6px';
@@ -424,13 +390,10 @@
           }
           bubble.appendChild(photoDiv);
         } else {
-          // highlight @mentions
           const text = document.createElement('div'); text.className = 'text';
           const content = msg.message || msg.text || msg.content || '';
           const html = escapeHtml(content).replace(/@([a-zA-Z0-9_-]{1,8})/g, (m, p1)=>{
-            // highlight local mentions
-            const cls = (p1 === username) ? 'mention me' : 'mention';
-            return `<span class="${cls}" style="color:${p1===username? 'var(--accent)': 'var(--muted)'}">@${p1}</span>`;
+            return `<span class="mention">@${p1}</span>`;
           });
           text.innerHTML = html;
           bubble.appendChild(text);
@@ -443,38 +406,7 @@
       function isAtBottom(){ return messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 80; }
       function scrollToBottom(){ requestAnimationFrame(()=> messagesEl.scrollTop = messagesEl.scrollHeight); }
 
-      // Fetch messages with trimming (keeps server logic)
-      async function fetchMessages(){
-        if(!apiBase) return;
-        try{
-          const res = await fetch(apiBase);
-          if(!res.ok) throw new Error('Fetch failed: '+res.status);
-          const data = await res.json();
-          if(!Array.isArray(data)) return;
-          data.sort((a,b)=> {
-            const ta = new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || (Number(a.id)||0);
-            const tb = new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || (Number(b.id)||0);
-            return ta-tb;
-          });
-          const wasAtBottom = isAtBottom();
-          messagesEl.innerHTML = '';
-          for(const m of data){
-            // if message has mention of current user, show a subtle flash (non-intrusive)
-            const el = renderMessage(m, username);
-            if(el) {
-              messagesEl.appendChild(el);
-              if((m.message||'').toLowerCase().includes('@'+(username||'').toLowerCase())){
-                el.style.boxShadow = '0 6px 30px rgba(88,101,242,0.08)';
-                // small animation remove after
-                setTimeout(()=> el.style.boxShadow = '', 1600);
-              }
-            }
-          }
-          if(wasAtBottom) scrollToBottom();
-          setStatus('Connected — '+data.length+' messages');
-        }catch(e){ console.error(e); setStatus('Error fetching messages'); }
-      }
-
+      // helper for safe fetch
       async function safeFetch(url, method='GET', body=null){
         try{
           const opts = { method, headers:{} };
@@ -484,6 +416,130 @@
           if(r.status === 204) return null;
           return await r.json();
         }catch(e){ console.warn('safeFetch', e); return null; }
+      }
+
+      // Trim server messages if over limit (attempt delete of oldest messages that have numeric ids)
+      async function trimServerIfNeeded(list){
+        try{
+          if(!Array.isArray(list)) return;
+          if(list.length <= 80) return;
+          // find oldest 20
+          const toDelete = list.slice(0, Math.min(20, list.length - 80 + 20));
+          // try deleting by id if available
+          const deletePromises = [];
+          for(const m of toDelete){
+            if(m.id){
+              // try both chat and photos endpoints (best-effort)
+              deletePromises.push(fetch(`${CHANNELS.general}/${m.id}`, { method:'DELETE' }).catch(()=>null));
+              deletePromises.push(fetch(`${CHANNELS.photos}/${m.id}`, { method:'DELETE' }).catch(()=>null));
+            }
+          }
+          await Promise.all(deletePromises);
+        }catch(e){ console.warn('trimServerIfNeeded', e); }
+      }
+
+      // fetch pinned public message and render top center
+      async function fetchPublicPinAndRender(){
+        try{
+          const r = await fetch(PINS_PUBLIC_API);
+          if(!r.ok) throw new Error('no pin');
+          const data = await r.json();
+          // data could be array or object
+          let p = null;
+          if(Array.isArray(data) && data.length) p = data[0];
+          else if(typeof data === 'object' && data) p = data;
+          if(p){
+            // render top center
+            pinnedCenterHolder.innerHTML = '';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'pinnedCenter';
+            const title = document.createElement('div'); title.className='pinTitle'; title.textContent = 'Pinned';
+            const text = document.createElement('div'); text.style.fontWeight='700'; text.style.color='var(--text)'; text.style.maxWidth='70%';
+            text.textContent = p.message || p.text || p.content || (p.title || 'Pinned message');
+            wrapper.appendChild(title);
+            wrapper.appendChild(text);
+            pinnedCenterHolder.appendChild(wrapper);
+          } else {
+            pinnedCenterHolder.innerHTML = '';
+          }
+        }catch(e){
+          // ignore errors silently
+          pinnedCenterHolder.innerHTML = '';
+        }
+      }
+
+      // fetch messages and trim/render; handle mention notifications
+      async function fetchMessages(){
+        if(!apiBase) return;
+        try{
+          const res = await fetch(apiBase);
+          if(!res.ok) throw new Error('Fetch failed: '+res.status);
+          const data = await res.json();
+          if(!Array.isArray(data)) return;
+
+          // sort by time ascending
+          data.sort((a,b)=>{
+            const ta = new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || (Number(a.id)||0);
+            const tb = new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || (Number(b.id)||0);
+            return ta - tb;
+          });
+
+          // If there are more than 80 messages, attempt to trim server-side (best effort), then trim client-side
+          if(data.length > 80){
+            await trimServerIfNeeded(data);
+            // re-fetch after trim attempt to get accurate list (best-effort)
+            try{
+              const r2 = await fetch(apiBase);
+              if(r2.ok){
+                const d2 = await r2.json();
+                if(Array.isArray(d2)) data.length = 0, data.push(...d2.sort((a,b)=>{ const ta=new Date(a.createdAt||a.created_at||a.timestamp||0).getTime()||0; const tb=new Date(b.createdAt||b.created_at||b.timestamp||0).getTime()||0; return ta-tb; }));
+              }
+            }catch(e){}
+          }
+
+          const wasAtBottom = isAtBottom();
+          messagesEl.innerHTML = '';
+
+          // render public pinned first (already rendered center) then messages; place pinned public above messages visually handled by absolute pinned center
+          for(const m of data){
+            const el = renderMessage(m, username);
+            if(el){
+              messagesEl.appendChild(el);
+              // mention detection
+              if(username && (m.message||'').toLowerCase().includes('@'+username.toLowerCase()) && (m.username !== username)){
+                // visual highlight
+                el.style.boxShadow = '0 8px 40px rgba(88,101,242,0.12)';
+                setTimeout(()=> el.style.boxShadow = '', 2000);
+                // browser notification
+                sendMentionNotification(m);
+              }
+            }
+          }
+          if(wasAtBottom) scrollToBottom();
+          setStatus('Connected — ' + data.length + ' messages');
+        }catch(e){
+          console.error(e);
+          setStatus('Error fetching messages');
+        }
+      }
+
+      // Mention notification using Notification API
+      async function sendMentionNotification(msg){
+        try{
+          if(!username) return;
+          if(!("Notification" in window)) return;
+          if(Notification.permission === 'granted'){
+            const title = `@${username} mentioned by ${msg.username||'Someone'}`;
+            const body = (msg.message||'').replace(/\n/g,' ');
+            const n = new Notification(title, { body, icon: (msg.avatarUrl || avatarDataUrl) });
+            n.onclick = ()=> window.focus();
+          } else if(Notification.permission !== 'denied'){
+            const p = await Notification.requestPermission();
+            if(p === 'granted'){
+              sendMentionNotification(msg);
+            }
+          }
+        }catch(e){ console.warn('notify', e); }
       }
 
       // reply handling
@@ -498,7 +554,7 @@
         messageInput.placeholder = 'Message (Shift+Enter for newline)';
       }
 
-      // post message with support for /w and replyTo and @ping detection
+      // posting message
       async function postMessage(rawText){
         if(!rawText || !rawText.trim()) return;
         if(!username){ setStatus('Set username first'); return; }
@@ -519,8 +575,6 @@
 
         const payload = { username, message: messageText, createdAt: new Date().toISOString(), nameColor, privateTo: privateTo || null, isPrivate: !!privateTo };
         if(replyToMessage) payload.replyTo = replyToMessage;
-
-        // include avatar if available
         if(avatarDataUrl) payload.avatarUrl = avatarDataUrl;
 
         const optimistic = renderMessage(payload, username);
@@ -535,31 +589,34 @@
         finally{ isSending = false; sendBtn.disabled = false; clearReplyTo(); }
       }
 
-      // image resizing helper (keeps GIFs intact)
-      function resizeImageFile(file, maxWidth=1024, maxHeight=1024){
+      // image resizing — large images are downsized so they can be uploaded; keep GIFs intact
+      function resizeImageFile(file, maxWidth=1200, maxHeight=1200){
         return new Promise((resolve, reject)=>{
-          if(!file.type || file.type === 'image/gif'){ // don't resize GIFs (to preserve animation)
+          if(!file.type || file.type === 'image/gif'){
             const reader = new FileReader();
             reader.onload = (e)=> resolve({ ok:true, dataUrl: e.target.result });
             reader.onerror = reject;
             reader.readAsDataURL(file);
             return;
           }
-          const img = new Image();
           const reader = new FileReader();
-          reader.onload = (e)=> { img.src = e.target.result; };
-          img.onload = ()=>{
-            let w = img.width, h = img.height;
-            const ratio = Math.min(maxWidth / w, maxHeight / h, 1);
-            w = Math.round(w * ratio); h = Math.round(h * ratio);
-            const canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img,0,0,w,h);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-            resolve({ ok:true, dataUrl });
+          reader.onload = (e)=> {
+            const img = new Image();
+            img.onload = ()=>{
+              let w = img.width, h = img.height;
+              const ratio = Math.min(maxWidth / w, maxHeight / h, 1);
+              w = Math.round(w * ratio); h = Math.round(h * ratio);
+              const canvas = document.createElement('canvas');
+              canvas.width = w; canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img,0,0,w,h);
+              // try to keep file size reasonable
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+              resolve({ ok:true, dataUrl });
+            };
+            img.onerror = (err)=> reject(err);
+            img.src = e.target.result;
           };
-          img.onerror = (err)=> reject(err);
           reader.onerror = reject;
           reader.readAsDataURL(file);
         });
@@ -572,7 +629,8 @@
         if(containsBadWords(file.name)){ muteUser(username, 120); setStatus('Forbidden file name. You are muted for 2 minutes.'); return; }
         isSending = true; uploadPhotoBtn.disabled = true;
         try{
-          const r = await resizeImageFile(file, 1024, 1024);
+          // resize aggressively if too big
+          const r = await resizeImageFile(file, 1200, 1200);
           if(!r.ok) throw new Error('Resize failed');
           const dataUrl = r.dataUrl;
           const payload = { username, createdAt: new Date().toISOString(), nameColor, imageUrl: dataUrl, message: '' , avatarUrl: avatarDataUrl || null};
@@ -585,7 +643,7 @@
         finally{ isSending = false; uploadPhotoBtn.disabled = false; }
       }
 
-      // players / online detection (idle removed for performance)
+      // players fetch (no idle detection here)
       function normalizePlayerName(p){ return p.name || p.username || p.nick || p.displayName || (p.id?String(p.id):String(p)); }
       function detectPlayerOnline(p){ try{ if(p.lastSeen){ const last = Date.parse(p.lastSeen); if(!isNaN(last) && (Date.now() - last) <= 15000) return true; } }catch(e){} return false; }
 
@@ -602,7 +660,6 @@
             if(on) online.push({name, raw:p});
             else offline.push({name, raw:p});
           }
-          // ensure local user present
           if(username){
             const existsOnline = online.some(x=>x.name===username);
             const existsOffline = offline.some(x=>x.name===username);
@@ -660,9 +717,9 @@
           if(found){
             localPlayerId = found.id;
             localStorage.setItem('notcord_playerId', localPlayerId);
-            await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', {...found, name: username, lastSeen: now, nameColor, avatarUrl: avatarDataUrl, idle:false});
+            await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', {...found, name: username, lastSeen: now, nameColor, avatarUrl: avatarDataUrl});
           } else {
-            const created = await safeFetch(PLAYERS_API, 'POST', { name: username, lastSeen: now, nameColor, avatarUrl: avatarDataUrl, idle:false });
+            const created = await safeFetch(PLAYERS_API, 'POST', { name: username, lastSeen: now, nameColor, avatarUrl: avatarDataUrl });
             if(created && created.id){ localPlayerId = created.id; localStorage.setItem('notcord_playerId', localPlayerId); }
           }
         }catch(e){ console.warn('upsertLocalPlayer', e); } finally{ fetchPlayers().catch(()=>{}); }
@@ -687,8 +744,7 @@
       }
       function stopHeartbeat(){ if(heartbeatInterval){ clearInterval(heartbeatInterval); heartbeatInterval = null; } }
 
-      // Modified fetchMessages decl above is used
-
+      // updates
       function updateCharCountAndState(){
         let val = messageInput.value || '';
         if(val.length > MAX_CHARS) messageInput.value = val.slice(0, MAX_CHARS);
@@ -708,16 +764,10 @@
         }
       }
 
-      // prevent accidental close: keep behavior but simplified
-      let backslashPressed = false;
-      window.addEventListener('keydown', (e) => { if (e.key === '\\') backslashPressed = true; });
-      window.addEventListener('beforeunload', (e) => { if (!backslashPressed) { e.preventDefault(); e.returnValue = ''; return ''; } });
-
-      // event wiring
+      // events
       channelsEl.addEventListener('click', (e)=>{
         const ch = e.target.closest('.channel');
         if(!ch) return;
-        // Immediately reflect UI change for snappier UX
         Array.from(channelsEl.children).forEach(c => c.classList.toggle('active', c.dataset.id === ch.dataset.id));
         setActiveChannel(ch.dataset.id).catch(()=>{});
       });
@@ -736,9 +786,7 @@
       setNameBtn.addEventListener('click', async ()=>{
         let val = usernameInput.value.trim();
         if(!val) val = 'Guest' + Math.floor(Math.random()*9000+1000);
-        // enforce length <=8 (input maxlength enforces but double-check)
         if(val.length > 8) val = val.slice(0,8);
-        // check name change cooldown
         const now = Date.now();
         if(username && now - lastNameChange < WEEK_MS){
           const wait = Math.ceil((WEEK_MS - (now - lastNameChange))/1000);
@@ -751,12 +799,10 @@
         localStorage.setItem('notcord_username', username);
         usernameBox.style.display = 'none'; usernameLocked.style.display = 'flex'; usernameDisplay.textContent = username;
         nameMeta.textContent = avatarDataUrl ? 'Avatar set' : 'No avatar';
-        // set avatar display
         renderAvatarToEl(avatarDataUrl, avatarDisplay);
         await upsertLocalPlayer(); await setLocalPlayerOnlineState(true); startHeartbeat(); await fetchPlayers(); updateCharCountAndState();
       });
 
-      // change name button (enforce weekly cooldown)
       changeNameBtn.addEventListener('click', ()=>{
         const now = Date.now();
         if(now - lastNameChange < WEEK_MS){
@@ -768,7 +814,6 @@
         usernameBox.style.display = 'flex'; usernameLocked.style.display = 'none';
       });
 
-      // avatar upload handling (weekly limit)
       avatarInput.addEventListener('change', async (e)=>{
         const file = avatarInput.files[0];
         if(!file) return;
@@ -801,17 +846,12 @@
         const txt = messageInput.value;
         postMessage(txt);
         messageInput.value = ''; updateCharCountAndState();
-        const map = readTypingMap(); if(map[activeChannel] && map[activeChannel][username]){ delete map[activeChannel][username]; writeTypingMap(map); updateTypingUI(); }
       });
 
       messageInput.addEventListener('input', ()=>{
         updateCharCountAndState();
-        if(username){
-          const map = readTypingMap(); map[activeChannel] = map[activeChannel] || {}; map[activeChannel][username] = Date.now(); writeTypingMap(map); updateTypingUI();
-        }
       });
 
-      // Enter to send, Shift+Enter newline; ESC to clear reply
       messageInput.addEventListener('keydown', (e)=>{ 
         if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); if(!sendBtn.disabled) sendBtn.click(); }
         if(e.key === 'Escape'){ if(replyToMessage) clearReplyTo(); messageInput.blur(); }
@@ -820,48 +860,41 @@
       photoInput.addEventListener('change', ()=> uploadPhotoBtn.disabled = !photoInput.files.length );
       uploadPhotoBtn.addEventListener('click', ()=> { if(photoInput.files.length) uploadPhoto(photoInput.files[0]); });
 
-      nameColorInput.addEventListener('input', async (e)=>{ nameColor = e.target.value; localStorage.setItem('notcord_nameColor', nameColor); if(localPlayerId) await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { name: username, lastSeen: new Date().toISOString(), nameColor, avatarUrl: avatarDataUrl }); Array.from(document.querySelectorAll('.meta .name')).forEach(el=>{ if(el.textContent===username) el.style.color = nameColor; }); fetchPlayers().catch(()=>{}); });
+      nameColorInput.addEventListener('input', async (e)=>{ nameColor = e.target.value; localStorage.setItem('notcord_nameColor', nameColor); if(localPlayerId) await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { name: username, lastSeen: new Date().toISOString(), nameColor, avatarUrl: avatarDataUrl }); fetchPlayers().catch(()=>{}); });
       resetNameColorBtn.addEventListener('click', ()=>{ nameColor='#ffcc00'; nameColorInput.value = nameColor; localStorage.setItem('notcord_nameColor', nameColor); });
 
-      themeColor1Input.addEventListener('input', (e)=>{ themeColor1 = e.target.value; localStorage.setItem('notcord_theme1', themeColor1); accentColor = themeColor1; localStorage.setItem('notcord_accent', accentColor); applyTheme(); });
-      resetTheme1Btn.addEventListener('click', ()=>{ themeColor1='#071226'; themeColor1Input.value = themeColor1; localStorage.setItem('notcord_theme1', themeColor1); applyTheme(); });
-      themeColor2Input.addEventListener('input', (e)=>{ themeColor2 = e.target.value; localStorage.setItem('notcord_theme2', themeColor2); applyTheme(); });
-      resetTheme2Btn.addEventListener('click', ()=>{ themeColor2='#07101a'; themeColor2Input.value = themeColor2; localStorage.setItem('notcord_theme2', themeColor2); applyTheme(); });
       themeColor3Input.addEventListener('input', (e)=>{ themeColor3 = e.target.value; localStorage.setItem('notcord_theme3', themeColor3); applyTheme(); });
       resetTheme3Btn.addEventListener('click', ()=>{ themeColor3='#0b2233'; themeColor3Input.value = themeColor3; localStorage.setItem('notcord_theme3', themeColor3); applyTheme(); });
 
+      // switch channel faster: reflect UI immediately and fetch messages; use faster polling
       async function setActiveChannel(id){
         activeChannel = id; apiBase = CHANNELS[id] || null; localStorage.setItem('notcord_channel', id);
         Array.from(channelsEl.children).forEach(ch => ch.classList.toggle('active', ch.dataset.id === id));
         channelTitleEl.textContent = '# ' + id;
         updateInputArea();
         if(polling) clearInterval(polling);
-        // Immediately fetch messages and use a faster poll interval for snappy updates
         await fetchMessages();
-        if(id !== 'photos') polling = setInterval(fetchMessages, 2000); // faster polling
+        if(id !== 'photos') polling = setInterval(fetchMessages, 2000);
       }
 
-      function cleanupTypingMap(){
-        const map = readTypingMap(); const now = Date.now(); let changed = false;
-        for(const ch of Object.keys(map)){ for(const u of Object.keys(map[ch])){ if(now - map[ch][u] > TYPING_EXPIRE_MS){ delete map[ch][u]; changed = true; } } if(Object.keys(map[ch]).length===0) delete map[ch]; }
-        if(changed) writeTypingMap(map);
-        updateTypingUI();
-      }
-
-      // initial load
+      // initial load and periodic tasks
       async function init(){
         applyTheme(); initializeAppearanceInputs();
-        // load avatar
         if(avatarDataUrl) renderAvatarToEl(avatarDataUrl, avatarDisplay);
         if(username){ usernameBox.style.display='none'; usernameLocked.style.display='flex'; usernameDisplay.textContent = username; nameMeta.textContent = avatarDataUrl? 'Avatar set' : 'No avatar'; await upsertLocalPlayer(); await setLocalPlayerOnlineState(true); startHeartbeat(); } else { usernameBox.style.display='flex'; usernameLocked.style.display='none'; }
-        await setActiveChannel(activeChannel); await fetchPlayers(); if(playersPolling) clearInterval(playersPolling); playersPolling = setInterval(fetchPlayers, 4000);
-        setInterval(cleanupTypingMap, 2000);
+        await fetchPublicPinAndRender();
+        await setActiveChannel(activeChannel);
+        await fetchPlayers();
+        if(playersPolling) clearInterval(playersPolling);
+        playersPolling = setInterval(fetchPlayers, 5000);
+        // refresh public pin regularly
+        setInterval(fetchPublicPinAndRender, 10000);
         setStatus('Connected (fast mode)');
-        renderPinned();
+        renderLocalPinned();
       }
       init();
 
-      // visibility handling simplified (idle removed)
+      // visibility handling simplified
       document.addEventListener('visibilitychange', async ()=>{
         if(!username) return;
         if(document.hidden){
@@ -882,7 +915,7 @@
         }
       });
 
-      // when leaving (close), try to persist offline state
+      // on unload try to persist offline state
       window.addEventListener('beforeunload', ()=>{
         try{
           if(localPlayerId){
@@ -898,8 +931,8 @@
         }catch(e){}
       });
 
-      // quick debug
-      window._notcord = { muteMap, fetchMessages, fetchPlayers, pinned };
+      // expose for debugging
+      window._notcord = { fetchMessages, fetchPlayers, pinned, sendMentionNotification };
     })();
   </script>
 </body>
