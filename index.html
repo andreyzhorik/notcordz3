@@ -31,7 +31,7 @@
     .usernameBox{display:flex;gap:8px;align-items:center}
     .usernameBox input{flex:1;padding:10px 12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:inherit;outline:none}
     .usernameBox button{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:linear-gradient(90deg,var(--accent),#4458f7);color:white;cursor:pointer}
-    .usernameLocked{display:flex;gap:8px;align-items:center;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid var(--border);font-weight:600;overflow:hidden}
+    .usernameLocked{display:flex;gap:8px;align-items:center;padding:8px;border-radius:10px;background:rgba(,,,0.02);border:1px solid var(--border);font-weight:600;overflow:hidden}
     .usernameLocked .avatar{width:36px;height:36px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center}
     .channels{margin-top:6px;display:flex;flex-direction:column;gap:6px}
     .channel{padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer;border:1px solid transparent;display:flex;justify-content:space-between;align-items:center}
@@ -278,7 +278,7 @@
       let playersPolling = null;
       let heartbeatInterval = null;
       let isSending = false;
-      const MAX_CHARS = 255;
+      const MAX_CHARS = 256;
       const TYPING_KEY = 'notcord_typing_v3';
       const TYPING_EXPIRE_MS = 5000;
       const HEARTBEAT_MS = 5000;
