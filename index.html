@@ -3,20 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>notcord — 2.0</title>
+  <title>notcord — Christmas Edition</title>
   <style>
     :root{
-      --theme-1: #071226;
-      --theme-2: #07101a;
-      --theme-3: #0b2233;    /* chat bubbles & logo */
+      --theme-1: #0b2b26;
+      --theme-2: #071a16;
+      --theme-3: #1e3d38;
       --muted: #9aa4b2;
-      --accent: #5865f2;
+      --accent: #c62828;
       --me-bg: #2b3440;
       --border: rgba(255,255,255,0.06);
       --text: #e6eef6;
       --yellow: #f7b500;
-      --pin-bg: rgba(88,101,242,0.08);
-      --pin-accent: rgba(88,101,242,0.16);
+      --pin-bg: rgba(198,40,40,0.08);
+      --pin-accent: rgba(198,40,40,0.16);
+      --christmas-green: #2d7d32;
+      --christmas-red: #c62828;
+      --christmas-gold: #ffd700;
     }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Helvetica,Arial;color:var(--text);
@@ -26,17 +29,17 @@
     .app { width:100%; height:100vh; display:grid; grid-template-columns:260px 1fr 260px; overflow:hidden; gap:10px; padding:10px; }
     .sidebar{ padding:14px; display:flex; flex-direction:column; gap:12px; height:100vh; overflow:auto; background:linear-gradient(180deg,var(--theme-1),var(--theme-2)); border-radius:12px; border-right:1px solid var(--border) }
     .brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:18px}
-    .brand .dot{width:28px;height:28px;border-radius:8px;background:var(--theme-2);box-shadow:0 8px 26px rgba(11,34,51,0.45);display:flex;align-items:center;justify-content:center;font-weight:800}
-    .brand .name{color:var(--theme-3);font-weight:800;font-size:18px}
+    .brand .dot{width:28px;height:28px;border-radius:8px;background:var(--christmas-red);box-shadow:0 8px 26px rgba(198,40,40,0.45);display:flex;align-items:center;justify-content:center;font-weight:800;color:white}
+    .brand .name{color:var(--christmas-gold);font-weight:800;font-size:18px}
     .usernameBox{display:flex;gap:8px;align-items:center}
     .usernameBox input{flex:1;padding:10px 12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:inherit;outline:none}
-    .usernameBox button{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:linear-gradient(90deg,var(--accent),#4458f7);color:white;cursor:pointer}
-    .usernameLocked{display:flex;gap:8px;align-items:center;padding:8px;border-radius:10px;background:rgba(,,,0.02);border:1px solid var(--border);font-weight:600;overflow:hidden}
+    .usernameBox button{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:linear-gradient(90deg,var(--christmas-red),#d32f2f);color:white;cursor:pointer}
+    .usernameLocked{display:flex;gap:8px;align-items:center;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid var(--border);font-weight:600;overflow:hidden}
     .usernameLocked .avatar{width:36px;height:36px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center}
     .channels{margin-top:6px;display:flex;flex-direction:column;gap:6px}
     .channel{padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer;border:1px solid transparent;display:flex;justify-content:space-between;align-items:center}
     .channel:hover{background:rgba(255,255,255,0.01)}
-    .channel.active{background:linear-gradient(90deg, rgba(88,101,242,0.12), rgba(88,101,242,0.02));color:var(--text);border-color:rgba(88,101,242,0.12)}
+    .channel.active{background:linear-gradient(90deg, rgba(198,40,40,0.12), rgba(198,40,40,0.02));color:var(--text);border-color:rgba(198,40,40,0.12)}
     .settings{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:8px;border-top:1px solid var(--border)}
     .settings label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
     .settings input[type="color"]{width:48px;height:32px;padding:0;border:none;background:transparent;cursor:pointer}
@@ -53,14 +56,14 @@
     .messages{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;min-height:0;background:transparent}
     .pinnedCenter{ position:absolute; left:50%; transform:translateX(-50%); top:10px; z-index:30; background:var(--pin-bg); border:1px solid var(--pin-accent); padding:10px 14px; border-radius:12px; color:var(--text); display:flex; gap:10px; align-items:center; justify-content:center; max-width:70%; text-align:center; box-shadow:0 10px 30px rgba(2,6,23,0.6); transition:opacity .2s ease, transform .15s ease; }
     .pinnedCenter .pin-close{ background: transparent; border: none; color: var(--muted); cursor: pointer; margin-left: 8px; font-weight: 700; }
-    .pinnedCenter .pinTitle{font-weight:800;color:var(--accent); margin-right:8px}
+    .pinnedCenter .pinTitle{font-weight:800;color:var(--christmas-red); margin-right:8px}
     .message{display:flex;gap:12px;align-items:flex-start;max-width:85%}
     .message.me{margin-left:auto;justify-content:flex-end}
     .bubble{
       background:var(--theme-3);
       color:var(--text);
       padding:10px 12px;border-radius:12px;display:flex;flex-direction:column;gap:8px;word-break:break-word;
-      border-left:4px solid rgba(0,0,0,0.08);
+      border-left:4px solid var(--christmas-green);
       box-shadow:0 8px 28px rgba(2,6,23,0.6);
       max-width:560px;
       position:relative;
@@ -78,33 +81,103 @@
     .inputArea textarea{flex:1;min-height:44px;max-height:160px;resize:none;padding:10px;border-radius:10px;background:transparent;border:1px solid var(--border);color:inherit;outline:none}
     .controls{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:120px}
     .charCount{font-size:12px;color:var(--muted)}
-    .sendBtn{background:var(--accent);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+    .sendBtn{background:var(--christmas-red);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
     .sendBtn:disabled{opacity:0.6;cursor:default}
     .photoUploadArea { padding:12px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:center; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent) }
     .photoUploadArea input[type=file]{ flex:1 }
-    .photoUploadArea button{ background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer }
+    .photoUploadArea button{ background:var(--christmas-red); color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer }
     .playersPanel{background:linear-gradient(180deg,var(--theme-1),var(--theme-2));border-left:1px solid var(--border);padding:14px;display:flex;flex-direction:column;gap:12px;height:100vh;overflow:auto;border-radius:12px}
     .playersPanel h3{margin:0;font-size:15px;color:var(--muted)}
     .playersList{display:flex;flex-direction:column;gap:6px;overflow:auto}
     .player{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid transparent;color:var(--text)}
     .player.offline{opacity:0.6}
     .player .statusDot{width:10px;height:10px;border-radius:50%;margin-right:8px;flex-shrink:0;border:2px solid rgba(0,0,0,0.12)}
-    .player.online .statusDot{background:#39d353;box-shadow:0 0 8px rgba(57,211,83,0.12)}
+    .player.online .statusDot{background:var(--christmas-green);box-shadow:0 0 8px rgba(45,125,50,0.12)}
     .player.offline .statusDot{background:#a0a0a0}
     .player .playerName{font-weight:600}
     .pinnedArea{border-top:1px dashed rgba(255,255,255,0.03);padding-top:10px;margin-top:8px}
     .pin{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;border:1px solid var(--border);display:flex;gap:8px;align-items:flex-start}
     .pin .meta{font-size:13px}
     .pin .closePin{margin-left:auto;background:transparent;border:none;color:var(--muted);cursor:pointer}
-    .mention { background: rgba(88,101,242,0.06); padding:2px 6px; border-radius:6px; font-weight:700; color:var(--accent); }
+    .mention { background: rgba(198,40,40,0.06); padding:2px 6px; border-radius:6px; font-weight:700; color:var(--christmas-red); }
+    
+    /* Christmas decorations */
+    .christmas-decoration {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+      overflow: hidden;
+    }
+    .snowflake {
+      position: absolute;
+      color: white;
+      font-size: 1em;
+      animation: fall linear infinite;
+      pointer-events: none;
+    }
+    @keyframes fall {
+      to { transform: translateY(100vh) rotate(360deg); }
+    }
+    
+    /* Code message styles */
+    .code-block {
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 8px 0;
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.1);
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--christmas-green);
+      border: none;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+    .copy-btn:hover {
+      background: var(--christmas-red);
+    }
+    .copy-btn.copied {
+      background: var(--christmas-gold);
+      color: #000;
+    }
+    .language-tag {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: var(--christmas-red);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    
     @media (max-width:980px){ .app{grid-template-columns:200px 1fr 140px} }
     @media (max-width:720px){ .app{grid-template-columns:1fr} .sidebar,.playersPanel{display:none} }
   </style>
 </head>
 <body>
   <div class="app" id="app">
+    <div class="christmas-decoration" id="snowflakes"></div>
+    
     <aside class="sidebar" id="sidebar">
-      <div class="brand"><div class="dot" aria-hidden>NC</div><div class="name">notcord</div></div>
+      <div class="brand"><div class="dot" aria-hidden>🎄</div><div class="name">notcord</div></div>
 
       <div id="usernameSection">
         <div class="usernameBox" id="usernameBox">
@@ -128,6 +201,7 @@
       <div class="channels" id="channels">
         <div class="channel active" data-id="general" role="button"># general</div>
         <div class="channel" data-id="photos" role="button"># photos</div>
+        <div class="channel" data-id="code" role="button"># code 🎅</div>
       </div>
 
       <div class="settings" aria-label="Appearance settings">
@@ -136,30 +210,6 @@
             <input type="color" id="nameColor" title="Name color" />
             <div style="flex:1"></div>
             <button id="resetNameColor" class="toggleBtn">Reset</button>
-          </div>
-        </label>
-
-        <label>Theme color 1
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="color" id="themeColor1" title="Theme color 1" />
-            <div style="flex:1"></div>
-            <button id="resetTheme1" class="toggleBtn">Reset</button>
-          </div>
-        </label>
-
-        <label>Theme color 2
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="color" id="themeColor2" title="Theme color 2" />
-            <div style="flex:1"></div>
-            <button id="resetTheme2" class="toggleBtn">Reset</button>
-          </div>
-        </label>
-
-        <label>Theme color 3 (chat bubbles & logo)
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="color" id="themeColor3" title="Theme color 3" />
-            <div style="flex:1"></div>
-            <button id="resetTheme3" class="toggleBtn">Reset</button>
           </div>
         </label>
 
@@ -196,11 +246,19 @@
           <input type="file" id="photoInput" accept="image/*,image/gif" />
           <button id="uploadPhotoBtn" disabled>Upload Photo/GIF</button>
         </div>
+        
+        <div class="codeUploadArea" id="codeUploadWrapper" style="display:none">
+          <textarea id="codeInput" placeholder="Paste your code here (no limits!)" style="width:100%;min-height:120px;padding:10px;border-radius:10px;background:transparent;border:1px solid var(--border);color:inherit;outline:none;font-family:'Courier New',monospace"></textarea>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+            <input type="text" id="languageInput" placeholder="Language (e.g., javascript, python)" style="flex:1;padding:8px;border-radius:6px;background:transparent;border:1px solid var(--border);color:inherit;outline:none">
+            <button id="uploadCodeBtn" style="background:var(--christmas-green);color:white;border:none;padding:8px 12px;border-radius:10px;cursor:pointer">Upload Code</button>
+          </div>
+        </div>
       </div>
     </section>
 
     <aside class="playersPanel" id="playersPanel">
-      <h3>Players</h3>
+      <h3>Players 🎁</h3>
       <div id="playersStatus" style="font-size:13px;color:var(--muted)">Loading...</div>
       <div style="height:6px"></div>
       <div class="playersList" id="playersList" aria-live="polite"></div>
@@ -220,10 +278,11 @@
       // --- Endpoints ---
       const CHANNELS = {
         general: 'https://68e839b2f2707e6128ca35e1.mockapi.io/chat',
-        photos: 'https://68eeed86b06cc802829ba196.mockapi.io/photos'
+        photos: 'https://68eeed86b06cc802829ba196.mockapi.io/photos',
+        code: 'https://68eeed86b06cc802829ba196.mockapi.io/code'
       };
       const PLAYERS_API = 'https://68e839b2f2707e6128ca35e1.mockapi.io/players';
-      const PINS_PUBLIC_API = 'https://6907fcb5b49bea95fbf20cbc.mockapi.io/pined'; // public pinned endpoint
+      const PINS_PUBLIC_API = 'https://6907fcb5b49bea95fbf20cbc.mockapi.io/pined';
 
       // --- Config ---
       const BAD_WORDS = ['fuck','bitch','nigger','tun tun tun sahur','нахуй','гей','gay','хуета'];
@@ -243,6 +302,10 @@
       const photoUploadWrapper = document.getElementById('photoUploadWrapper');
       const photoInput = document.getElementById('photoInput');
       const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+      const codeUploadWrapper = document.getElementById('codeUploadWrapper');
+      const codeInput = document.getElementById('codeInput');
+      const languageInput = document.getElementById('languageInput');
+      const uploadCodeBtn = document.getElementById('uploadCodeBtn');
 
       const usernameBox = document.getElementById('usernameBox');
       const usernameInput = document.getElementById('usernameInput');
@@ -256,13 +319,7 @@
       const nameMeta = document.getElementById('nameMeta');
 
       const nameColorInput = document.getElementById('nameColor');
-      const themeColor1Input = document.getElementById('themeColor1');
-      const themeColor2Input = document.getElementById('themeColor2');
-      const themeColor3Input = document.getElementById('themeColor3');
       const resetNameColorBtn = document.getElementById('resetNameColor');
-      const resetTheme1Btn = document.getElementById('resetTheme1');
-      const resetTheme2Btn = document.getElementById('resetTheme2');
-      const resetTheme3Btn = document.getElementById('resetTheme3');
 
       const playersListEl = document.getElementById('playersList');
       const playersStatusEl = document.getElementById('playersStatus');
@@ -285,10 +342,10 @@
 
       let username = localStorage.getItem('notcord_username') || '';
       let nameColor = localStorage.getItem('notcord_nameColor') || '#ffcc00';
-      let themeColor1 = localStorage.getItem('notcord_theme1') || '#071226';
-      let themeColor2 = localStorage.getItem('notcord_theme2') || '#07101a';
-      let themeColor3 = localStorage.getItem('notcord_theme3') || '#0b2233';
-      let accentColor = localStorage.getItem('notcord_accent') || themeColor1;
+      let themeColor1 = localStorage.getItem('notcord_theme1') || '#0b2b26';
+      let themeColor2 = localStorage.getItem('notcord_theme2') || '#071a16';
+      let themeColor3 = localStorage.getItem('notcord_theme3') || '#1e3d38';
+      let accentColor = localStorage.getItem('notcord_accent') || '#c62828';
       let localPlayerId = localStorage.getItem('notcord_playerId') || null;
 
       const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -299,13 +356,13 @@
       let pinned = JSON.parse(localStorage.getItem('notcord_pinned') || '[]');
       const muteMap = new Map();
 
-      // Track notifications already sent (to ensure one notification per mention message)
+      // Track notifications already sent
       const notifiedKey = 'notcord_notified_messages';
       let notifiedSet = new Set(JSON.parse(localStorage.getItem(notifiedKey) || '[]'));
 
       // interval id for pin rotation
       let pinRotationIntervalId = null;
-      let publicPinnedList = []; // store public pins (if API returns array)
+      let publicPinnedList = [];
 
       // reply state
       let replyToMessage = null;
@@ -314,8 +371,13 @@
       function setStatus(txt){ statusEl.textContent = txt; }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
       function formatTime(iso){ try{ const d=new Date(iso); if(isNaN(d)) return ''; return d.toLocaleString([], {hour:'2-digit', minute:'2-digit'}); }catch(e){return ''} }
-      function applyTheme(){ document.documentElement.style.setProperty('--theme-1', themeColor1); document.documentElement.style.setProperty('--theme-2', themeColor2); document.documentElement.style.setProperty('--theme-3', themeColor3); document.documentElement.style.setProperty('--accent', accentColor || themeColor1); }
-      function initializeAppearanceInputs(){ nameColorInput.value = nameColor; themeColor1Input.value = themeColor1; themeColor2Input.value = themeColor2; themeColor3Input.value = themeColor3; }
+      function applyTheme(){ 
+        document.documentElement.style.setProperty('--theme-1', themeColor1); 
+        document.documentElement.style.setProperty('--theme-2', themeColor2); 
+        document.documentElement.style.setProperty('--theme-3', themeColor3); 
+        document.documentElement.style.setProperty('--accent', accentColor); 
+      }
+      function initializeAppearanceInputs(){ nameColorInput.value = nameColor; }
 
       function readTypingMap(){ try{ return JSON.parse(localStorage.getItem(TYPING_KEY)||'{}'); }catch(e){ return {}; } }
       function writeTypingMap(m){ try{ localStorage.setItem(TYPING_KEY, JSON.stringify(m)); }catch(e){} }
@@ -344,7 +406,25 @@
         return BAD_WORDS.some(w => w && lower.includes(w));
       }
 
-      // --- Pins (local & public) ---
+      // Christmas snowflakes
+      function createSnowflakes() {
+        const snowflakesContainer = document.getElementById('snowflakes');
+        const snowflakes = ['❄', '⛄', '🎄', '🎁', '⭐'];
+        
+        for (let i = 0; i < 50; i++) {
+          const snowflake = document.createElement('div');
+          snowflake.className = 'snowflake';
+          snowflake.textContent = snowflakes[Math.floor(Math.random() * snowflakes.length)];
+          snowflake.style.left = Math.random() * 100 + 'vw';
+          snowflake.style.animationDuration = (Math.random() * 5 + 5) + 's';
+          snowflake.style.animationDelay = Math.random() * 5 + 's';
+          snowflake.style.opacity = Math.random() * 0.5 + 0.3;
+          snowflake.style.fontSize = (Math.random() * 10 + 10) + 'px';
+          snowflakesContainer.appendChild(snowflake);
+        }
+      }
+
+      // --- Pins ---
       function savePinned(){ localStorage.setItem('notcord_pinned', JSON.stringify(pinned)); renderPinnedLocal(); }
       function renderPinnedLocal(){
         pinsListEl.innerHTML = '';
@@ -363,41 +443,34 @@
       }
       pinClearBtn.addEventListener('click', ()=> { pinned = []; savePinned(); });
 
-      // Update the top-center pinned display
       function showPinnedCenter(text){
         pinnedCenterEl.style.display = 'flex';
-        pinnedCenterEl.innerHTML = `<div class="pinTitle">Pinned</div><div style="font-weight:700;color:var(--text);max-width:70%">${escapeHtml(text)}</div><button class="pin-close" title="Dismiss">×</button>`;
+        pinnedCenterEl.innerHTML = `<div class="pinTitle">🎄 Pinned</div><div style="font-weight:700;color:var(--text);max-width:70%">${escapeHtml(text)}</div><button class="pin-close" title="Dismiss">×</button>`;
         const closeBtn = pinnedCenterEl.querySelector('.pin-close');
-        // Allow dismiss but will reappear when rotation cycles
         closeBtn.addEventListener('click', ()=> { pinnedCenterEl.style.display = 'none'; });
       }
 
-      // Fetch public pinned messages (and keep array)
       async function fetchPublicPinned(){
         try{
           const r = await fetch(PINS_PUBLIC_API);
           if(!r.ok) throw new Error('no pinned');
           const data = await r.json();
           publicPinnedList = Array.isArray(data) ? data : (data ? [data] : []);
-          // show first or choose random if multiple
           if(publicPinnedList.length){
             const chosen = publicPinnedList[Math.floor(Math.random()*publicPinnedList.length)];
             if(chosen && (chosen.message || chosen.text || chosen.content || chosen.title)){
               showPinnedCenter(chosen.message || chosen.text || chosen.content || chosen.title);
             }
           } else {
-            // fallback to local pinned if any
             if(pinned.length) showPinnedCenter(pinned[0].message || '');
             else { pinnedCenterEl.style.display = 'none'; pinnedCenterEl.innerHTML = ''; }
           }
         }catch(e){
-          // fallback to local pinned
           if(pinned.length) showPinnedCenter(pinned[0].message || '');
           else { pinnedCenterEl.style.display = 'none'; pinnedCenterEl.innerHTML = ''; }
         }
       }
 
-      // rotate pinned messages randomly between local pinned and public pinned lists
       function startPinRotation(intervalMs = 5000){
         if(pinRotationIntervalId) clearInterval(pinRotationIntervalId);
         pinRotationIntervalId = setInterval(()=>{
@@ -413,7 +486,6 @@
         }, intervalMs);
       }
 
-      // Post a public pinned message to the PINS_PUBLIC_API
       async function postPublicPin(payload){
         try{
           const r = await fetch(PINS_PUBLIC_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
@@ -437,25 +509,39 @@
         bubble.dataset.msgId = msg.id || msg.createdAt || '';
 
         const actionsDiv = document.createElement('div'); actionsDiv.className = 'actions';
-        // Reply button
-        const replyBtn = document.createElement('button'); replyBtn.title = 'Reply'; replyBtn.innerHTML = '↩';
-        replyBtn.onclick = (e)=>{ e.stopPropagation(); setReplyTo(msg); };
-        actionsDiv.appendChild(replyBtn);
-        // Pin button
-        const pinBtn = document.createElement('button'); pinBtn.title = 'Pin'; pinBtn.innerHTML = '📌';
-        pinBtn.onclick = async (e)=>{
-          e.stopPropagation();
-          const id = msg.id || msg.createdAt || ('local-'+Date.now());
-          if(!pinned.some(p=>p.id===id)){
-            pinned.unshift({ id, username: author, message: msg.message || msg.text || '', createdAt: msg.createdAt || new Date().toISOString() });
-            if(pinned.length>20) pinned.pop();
-            savePinned();
-          }
-          const payload = { id, username: author, message: msg.message || msg.text || '', createdAt: msg.createdAt || new Date().toISOString() };
-          postPublicPin(payload).catch(()=>{});
-          showPinnedCenter(payload.message);
-        };
-        actionsDiv.appendChild(pinBtn);
+        
+        // Code messages have different actions
+        if (msg.isCode) {
+          const copyBtn = document.createElement('button'); copyBtn.title = 'Copy Code'; copyBtn.innerHTML = '📋';
+          copyBtn.onclick = (e)=>{
+            e.stopPropagation();
+            navigator.clipboard.writeText(msg.code || '').then(() => {
+              copyBtn.innerHTML = '✅';
+              setTimeout(() => copyBtn.innerHTML = '📋', 2000);
+            });
+          };
+          actionsDiv.appendChild(copyBtn);
+        } else {
+          const replyBtn = document.createElement('button'); replyBtn.title = 'Reply'; replyBtn.innerHTML = '↩';
+          replyBtn.onclick = (e)=>{ e.stopPropagation(); setReplyTo(msg); };
+          actionsDiv.appendChild(replyBtn);
+          
+          const pinBtn = document.createElement('button'); pinBtn.title = 'Pin'; pinBtn.innerHTML = '📌';
+          pinBtn.onclick = async (e)=>{
+            e.stopPropagation();
+            const id = msg.id || msg.createdAt || ('local-'+Date.now());
+            if(!pinned.some(p=>p.id===id)){
+              pinned.unshift({ id, username: author, message: msg.message || msg.text || '', createdAt: msg.createdAt || new Date().toISOString() });
+              if(pinned.length>20) pinned.pop();
+              savePinned();
+            }
+            const payload = { id, username: author, message: msg.message || msg.text || '', createdAt: msg.createdAt || new Date().toISOString() };
+            postPublicPin(payload).catch(()=>{});
+            showPinnedCenter(payload.message);
+          };
+          actionsDiv.appendChild(pinBtn);
+        }
+        
         bubble.appendChild(actionsDiv);
 
         const meta = document.createElement('div'); meta.className = 'meta';
@@ -484,7 +570,49 @@
           bubble.appendChild(quote);
         }
 
-        if(msg.imageUrl){
+        if(msg.isCode) {
+          // Render code block
+          const codeBlock = document.createElement('div'); 
+          codeBlock.className = 'code-block';
+          
+          if (msg.language) {
+            const langTag = document.createElement('div');
+            langTag.className = 'language-tag';
+            langTag.textContent = msg.language.toUpperCase();
+            codeBlock.appendChild(langTag);
+          }
+          
+          const codeContent = document.createElement('pre');
+          codeContent.textContent = msg.code || '';
+          codeContent.style.margin = '0';
+          codeContent.style.paddingTop = msg.language ? '20px' : '0';
+          codeBlock.appendChild(codeContent);
+          
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'copy-btn';
+          copyBtn.textContent = 'Copy';
+          copyBtn.onclick = (e) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(msg.code || '').then(() => {
+              copyBtn.textContent = 'Copied!';
+              copyBtn.classList.add('copied');
+              setTimeout(() => {
+                copyBtn.textContent = 'Copy';
+                copyBtn.classList.remove('copied');
+              }, 2000);
+            });
+          };
+          codeBlock.appendChild(copyBtn);
+          
+          bubble.appendChild(codeBlock);
+          
+          if(msg.message){
+            const caption = document.createElement('div'); 
+            caption.className = 'text'; 
+            caption.textContent = msg.message;
+            bubble.appendChild(caption);
+          }
+        } else if(msg.imageUrl){
           const photoDiv = document.createElement('div'); photoDiv.className = 'photoMessage';
           const img = document.createElement('img'); img.src = msg.imageUrl; img.alt = msg.message || 'photo';
           img.addEventListener('click', ()=> window.open(img.src, '_blank'));
@@ -504,7 +632,6 @@
           bubble.appendChild(text);
         }
 
-        // clicking bubble focuses and allows reply
         bubble.addEventListener('dblclick', ()=> setReplyTo(msg));
 
         container.appendChild(bubble);
@@ -526,7 +653,6 @@
         }catch(e){ console.warn('safeFetch', e); return null; }
       }
 
-      // Trim server messages if count > MAX_MESSAGES_KEEP: delete oldest TRIM_DELETE_COUNT (best-effort)
       async function trimServerIfNeeded(list){
         try{
           if(!Array.isArray(list)) return;
@@ -542,24 +668,23 @@
             if(m.id){
               deletePromises.push(fetch(`${CHANNELS.general}/${m.id}`, { method:'DELETE' }).catch(()=>null));
               deletePromises.push(fetch(`${CHANNELS.photos}/${m.id}`, { method:'DELETE' }).catch(()=>null));
+              deletePromises.push(fetch(`${CHANNELS.code}/${m.id}`, { method:'DELETE' }).catch(()=>null));
             }
           }
           await Promise.all(deletePromises);
         }catch(e){ console.warn('trimServerIfNeeded', e); }
       }
 
-      // Mention notification using Notification API - send once per message
       async function sendMentionNotificationOnce(msg){
         try{
           if(!username) return;
           if(!("Notification" in window)) return;
           const mid = msg.id || (msg.createdAt ? (msg.createdAt + '::' + (msg.username||'')) : (msg.message ? ('hash::'+hashString(msg.message+msg.createdAt)) : String(Date.now())));
           if(notifiedSet.has(mid)) return;
-          // If message contains @everyone, treat as mention for everyone
           const messageLower = (msg.message || '').toLowerCase();
           const isEveryone = messageLower.includes('@everyone');
           const mentionsUser = username && messageLower.includes('@' + username.toLowerCase());
-          if(!isEveryone && !mentionsUser) return; // nothing to notify for this client
+          if(!isEveryone && !mentionsUser) return;
           if(Notification.permission === 'granted'){
             const title = isEveryone ? `Everyone pinged by ${msg.username||'Someone'}` : `@${username} mentioned by ${msg.username||'Someone'}`;
             const body = (msg.message||'').replace(/\n/g,' ');
@@ -574,14 +699,13 @@
         }catch(e){ console.warn('notify', e); }
       }
 
-      // simple (fast) string hash for fallback id generation
       function hashString(str){
         let h = 0;
         for(let i=0;i<str.length;i++){ h = ((h<<5)-h) + str.charCodeAt(i); h |= 0; }
         return String(h >>> 0);
       }
 
-      // Fetch messages and render; handle trimming and mentions
+      // Fetch messages and render
       async function fetchMessages(){
         if(!apiBase) return;
         try{
@@ -614,10 +738,9 @@
             const el = renderMessage(m, username);
             if(el){
               messagesEl.appendChild(el);
-              // mentions/highlight & notification
               const textLower = (m.message||'').toLowerCase();
               if(username && (textLower.includes('@'+username.toLowerCase()) || textLower.includes('@everyone')) && (m.username !== username)){
-                el.style.boxShadow = '0 6px 30px rgba(88,101,242,0.08)';
+                el.style.boxShadow = '0 6px 30px rgba(198,40,40,0.08)';
                 setTimeout(()=> el.style.boxShadow = '', 1600);
                 sendMentionNotificationOnce(m);
               }
@@ -631,73 +754,44 @@
         }
       }
 
-      // Resize image before upload (preserve GIFs)
-      function resizeImageFile(file, maxWidth=1200, maxHeight=1200){
-        return new Promise((resolve, reject)=>{
-          if(!file.type || file.type === 'image/gif'){
-            const reader = new FileReader();
-            reader.onload = (e)=> resolve({ ok:true, dataUrl: e.target.result });
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-            return;
-          }
-          const reader = new FileReader();
-          reader.onload = (e)=>{
-            const img = new Image();
-            img.onload = ()=>{
-              let w = img.width, h = img.height;
-              const sizeKB = file.size / 1024;
-              let factor = 1;
-              if(sizeKB > 1500) factor = 0.55;
-              else if(sizeKB > 900) factor = 0.75;
-              else if(sizeKB > 400) factor = 0.9;
-              const targetW = Math.round(maxWidth * factor);
-              const targetH = Math.round(maxHeight * factor);
-              const ratio = Math.min(targetW / w, targetH / h, 1);
-              w = Math.round(w * ratio); h = Math.round(h * ratio);
-              const canvas = document.createElement('canvas');
-              canvas.width = w; canvas.height = h;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img,0,0,w,h);
-              const quality = (sizeKB > 1200) ? 0.75 : 0.85;
-              const dataUrl = canvas.toDataURL('image/jpeg', quality);
-              resolve({ ok:true, dataUrl });
-            };
-            img.onerror = (err)=> reject(err);
-            img.src = e.target.result;
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-      }
-
-      // Upload photo with resizing and fallback pass if result too big
-      async function uploadPhoto(file){
-        if(!file) return;
+      // Upload code
+      async function uploadCode(){
+        const code = codeInput.value.trim();
+        const language = languageInput.value.trim() || 'text';
+        
+        if(!code) return;
         if(!username){ setStatus('Set username first'); return; }
         if(isUserMuted(username)){ setStatus('You are muted and cannot upload'); return; }
-        if(containsBadWords(file.name)){ muteUser(username, 120); setStatus('Forbidden file name. You are muted for 2 minutes.'); return; }
-        isSending = true; uploadPhotoBtn.disabled = true;
+        
+        isSending = true; 
+        uploadCodeBtn.disabled = true;
+        uploadCodeBtn.textContent = 'Uploading...';
+        
         try{
-          let r = await resizeImageFile(file, 1200, 1200);
-          if(!r.ok) throw new Error('Resize failed');
-          let dataUrl = r.dataUrl;
-          const approxSize = Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 3/4);
-          if(approxSize > 1500*1024 && file.type !== 'image/gif'){
-            const r2 = await resizeImageFile(file, 800, 800);
-            if(r2.ok) dataUrl = r2.dataUrl;
-          }
-          const payload = { username, createdAt: new Date().toISOString(), nameColor, imageUrl: dataUrl, message: '' , avatarUrl: avatarDataUrl || null};
-          const res = await fetch(CHANNELS.photos, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const payload = { 
+            username, 
+            code: code,
+            language: language,
+            isCode: true,
+            createdAt: new Date().toISOString(), 
+            nameColor, 
+            avatarUrl: avatarDataUrl || null
+          };
+          
+          const res = await fetch(CHANNELS.code, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
           if(!res.ok) throw new Error('Upload failed: '+res.status);
-          setStatus('Photo uploaded');
-          photoInput.value = '';
+          
+          setStatus('Code uploaded');
+          codeInput.value = '';
+          languageInput.value = '';
           await fetchMessages();
         }catch(e){
           console.error(e);
-          setStatus('Photo upload failed');
+          setStatus('Code upload failed');
         }finally{
-          isSending = false; uploadPhotoBtn.disabled = false;
+          isSending = false; 
+          uploadCodeBtn.disabled = false;
+          uploadCodeBtn.textContent = 'Upload Code';
         }
       }
 
@@ -729,7 +823,6 @@
           else { setStatus('Whisper format: /w name text'); isSending=false; sendBtn.disabled=false; return; }
         }
 
-        // If user typed @everyone, include that in message; clients will treat it as everyone mention
         const payload = { username, message: messageText, createdAt: new Date().toISOString(), nameColor, privateTo: privateTo || null, isPrivate: !!privateTo };
         if(replyToMessage) payload.replyTo = replyToMessage;
         if(avatarDataUrl) payload.avatarUrl = avatarDataUrl;
@@ -747,7 +840,7 @@
         finally{ isSending = false; sendBtn.disabled = false; clearReplyTo(); }
       }
 
-      // Players (simplified)
+      // Players
       function normalizePlayerName(p){ return p.name || p.username || p.nick || p.displayName || (p.id?String(p.id):String(p)); }
       function detectPlayerOnline(p){ try{ if(p.lastSeen){ const last = Date.parse(p.lastSeen); if(!isNaN(last) && (Date.now() - last) <= 15000) return true; } }catch(e){} return false; }
 
@@ -948,18 +1041,13 @@
 
       photoInput.addEventListener('change', ()=> uploadPhotoBtn.disabled = !photoInput.files.length );
       uploadPhotoBtn.addEventListener('click', ()=> { if(photoInput.files.length) uploadPhoto(photoInput.files[0]); });
+      
+      uploadCodeBtn.addEventListener('click', uploadCode);
 
       nameColorInput.addEventListener('input', async (e)=>{ nameColor = e.target.value; localStorage.setItem('notcord_nameColor', nameColor); if(localPlayerId) await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { name: username, lastSeen: new Date().toISOString(), nameColor, avatarUrl: avatarDataUrl }); fetchPlayers().catch(()=>{}); });
       resetNameColorBtn.addEventListener('click', ()=>{ nameColor='#ffcc00'; nameColorInput.value = nameColor; localStorage.setItem('notcord_nameColor', nameColor); });
 
-      themeColor1Input.addEventListener('input', (e)=>{ themeColor1 = e.target.value; localStorage.setItem('notcord_theme1', themeColor1); accentColor = themeColor1; localStorage.setItem('notcord_accent', accentColor); applyTheme(); });
-      resetTheme1Btn.addEventListener('click', ()=>{ themeColor1='#071226'; themeColor1Input.value = themeColor1; localStorage.setItem('notcord_theme1', themeColor1); applyTheme(); });
-      themeColor2Input.addEventListener('input', (e)=>{ themeColor2 = e.target.value; localStorage.setItem('notcord_theme2', themeColor2); applyTheme(); });
-      resetTheme2Btn.addEventListener('click', ()=>{ themeColor2='#07101a'; themeColor2Input.value = themeColor2; localStorage.setItem('notcord_theme2', themeColor2); applyTheme(); });
-      themeColor3Input.addEventListener('input', (e)=>{ themeColor3 = e.target.value; localStorage.setItem('notcord_theme3', themeColor3); applyTheme(); });
-      resetTheme3Btn.addEventListener('click', ()=>{ themeColor3='#0b2233'; themeColor3Input.value = themeColor3; localStorage.setItem('notcord_theme3', themeColor3); applyTheme(); });
-
-      // Switch channel quickly and poll faster
+      // Switch channel
       async function setActiveChannel(id){
         activeChannel = id; apiBase = CHANNELS[id] || null; localStorage.setItem('notcord_channel', id);
         Array.from(channelsEl.children).forEach(ch => ch.classList.toggle('active', ch.dataset.id === id));
@@ -967,14 +1055,14 @@
         updateInputArea();
         if(polling) clearInterval(polling);
         await fetchMessages();
-        if(id !== 'photos') polling = setInterval(fetchMessages, 2000);
+        if(id !== 'photos' && id !== 'code') polling = setInterval(fetchMessages, 2000);
       }
 
       function updateCharCountAndState(){
         let val = messageInput.value || '';
         if(val.length > MAX_CHARS) messageInput.value = val.slice(0, MAX_CHARS);
         charCountEl.textContent = `${(messageInput.value||'').length} / ${MAX_CHARS}`;
-        const canSend = username && (messageInput.value||'').trim().length > 0 && activeChannel !== 'photos' && !isSending && !isUserMuted(username);
+        const canSend = username && (messageInput.value||'').trim().length > 0 && activeChannel !== 'photos' && activeChannel !== 'code' && !isSending && !isUserMuted(username);
         sendBtn.disabled = !canSend;
       }
 
@@ -982,10 +1070,86 @@
         if(activeChannel === 'photos'){
           inputWrapper.style.display = 'none';
           photoUploadWrapper.style.display = 'flex';
+          codeUploadWrapper.style.display = 'none';
           uploadPhotoBtn.disabled = true;
+        } else if (activeChannel === 'code') {
+          inputWrapper.style.display = 'none';
+          photoUploadWrapper.style.display = 'none';
+          codeUploadWrapper.style.display = 'block';
         } else {
           photoUploadWrapper.style.display = 'none';
+          codeUploadWrapper.style.display = 'none';
           inputWrapper.style.display = 'flex';
+        }
+      }
+
+      // Image resizing function
+      function resizeImageFile(file, maxWidth=1200, maxHeight=1200){
+        return new Promise((resolve, reject)=>{
+          if(!file.type || file.type === 'image/gif'){
+            const reader = new FileReader();
+            reader.onload = (e)=> resolve({ ok:true, dataUrl: e.target.result });
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (e)=>{
+            const img = new Image();
+            img.onload = ()=>{
+              let w = img.width, h = img.height;
+              const sizeKB = file.size / 1024;
+              let factor = 1;
+              if(sizeKB > 1500) factor = 0.55;
+              else if(sizeKB > 900) factor = 0.75;
+              else if(sizeKB > 400) factor = 0.9;
+              const targetW = Math.round(maxWidth * factor);
+              const targetH = Math.round(maxHeight * factor);
+              const ratio = Math.min(targetW / w, targetH / h, 1);
+              w = Math.round(w * ratio); h = Math.round(h * ratio);
+              const canvas = document.createElement('canvas');
+              canvas.width = w; canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img,0,0,w,h);
+              const quality = (sizeKB > 1200) ? 0.75 : 0.85;
+              const dataUrl = canvas.toDataURL('image/jpeg', quality);
+              resolve({ ok:true, dataUrl });
+            };
+            img.onerror = (err)=> reject(err);
+            img.src = e.target.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // Upload photo
+      async function uploadPhoto(file){
+        if(!file) return;
+        if(!username){ setStatus('Set username first'); return; }
+        if(isUserMuted(username)){ setStatus('You are muted and cannot upload'); return; }
+        if(containsBadWords(file.name)){ muteUser(username, 120); setStatus('Forbidden file name. You are muted for 2 minutes.'); return; }
+        isSending = true; uploadPhotoBtn.disabled = true;
+        try{
+          let r = await resizeImageFile(file, 1200, 1200);
+          if(!r.ok) throw new Error('Resize failed');
+          let dataUrl = r.dataUrl;
+          const approxSize = Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 3/4);
+          if(approxSize > 1500*1024 && file.type !== 'image/gif'){
+            const r2 = await resizeImageFile(file, 800, 800);
+            if(r2.ok) dataUrl = r2.dataUrl;
+          }
+          const payload = { username, createdAt: new Date().toISOString(), nameColor, imageUrl: dataUrl, message: '' , avatarUrl: avatarDataUrl || null};
+          const res = await fetch(CHANNELS.photos, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          if(!res.ok) throw new Error('Upload failed: '+res.status);
+          setStatus('Photo uploaded');
+          photoInput.value = '';
+          await fetchMessages();
+        }catch(e){
+          console.error(e);
+          setStatus('Photo upload failed');
+        }finally{
+          isSending = false; uploadPhotoBtn.disabled = false;
         }
       }
 
@@ -997,32 +1161,21 @@
         updateTypingUI();
       }
 
-      // warn user when trying to close tab (prevents accidental close)
-      window.addEventListener('beforeunload', function (e) {
-        // Standard message is ignored by most browsers, but returning a value triggers the prompt.
-        const confirmationMessage = 'You have unsaved changes. Are you sure you want to leave?';
-        (e || window.event).returnValue = confirmationMessage;
-        return confirmationMessage;
-      });
-
-      // NOTE: it's impossible and not user-friendly to literally "never close the tab" from a page.
-      // The beforeunload above will prompt and make closing harder, fulfilling the requested behavior
-      // to prevent accidental closing. We do not attempt malicious or abusive behavior.
-
       // Initial load
       async function init(){
+        createSnowflakes();
         applyTheme(); initializeAppearanceInputs();
         if(avatarDataUrl) renderAvatarToEl(avatarDataUrl, avatarDisplay);
         if(username){ usernameBox.style.display='none'; usernameLocked.style.display='flex'; usernameDisplay.textContent = username; nameMeta.textContent = avatarDataUrl? 'Avatar set' : 'No avatar'; await upsertLocalPlayer(); await setLocalPlayerOnlineState(true); startHeartbeat(); } else { usernameBox.style.display='flex'; usernameLocked.style.display='none'; }
         await fetchPublicPinned();
-        startPinRotation(7000); // rotate every 7s
+        startPinRotation(7000);
         await setActiveChannel(activeChannel);
         await fetchPlayers();
         if(playersPolling) clearInterval(playersPolling);
         playersPolling = setInterval(fetchPlayers, 5000);
         setInterval(cleanupTypingMap, 2000);
-        setInterval(fetchPublicPinned, 15000); // refresh public pins regularly
-        setStatus('Connected (fast mode)');
+        setInterval(fetchPublicPinned, 15000);
+        setStatus('Connected (Christmas Edition)');
         renderPinnedLocal();
       }
       init();
