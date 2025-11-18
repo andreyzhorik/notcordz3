@@ -278,7 +278,7 @@
         <div class="inputArea" id="inputWrapper">
           <textarea id="messageInput" placeholder="Message (Shift+Enter for newline)" maxlength="2000"></textarea>
           <div class="controls">
-            <div class="charCount" id="charCount">0 / 100</div>
+            <div class="charCount" id="charCount">0 / 256</div>
             <button id="sendBtn" class="sendBtn" disabled>Send</button>
           </div>
         </div>
@@ -351,8 +351,8 @@
 
       // --- Config ---
       const BAD_WORDS = ['fuck','bitch','nigger','tun tun tun sahur','нахуй','гей','gay','хуета'];
-      const MAX_MESSAGES_KEEP = 80;
-      const TRIM_DELETE_COUNT = 20;
+      const MAX_MESSAGES_KEEP = 95;
+      const TRIM_DELETE_COUNT = 10;
 
       // --- UI refs ---
       const channelsEl = document.getElementById('channels');
@@ -518,7 +518,7 @@
 
       // --- Theme Presets ---
       const DEFAULT_PRESETS = {
-        1: { theme1: '#1B4332', theme2: '#081C15', theme3: '#3D1C1C', accent: '#D32F2F' }, // Traditional Christmas
+        1: { theme1: '#1B4332', theme2: '#081C15', theme3: '#EA4630', accent: '#F8B229' },
         2: { theme1: '#0D3B66', theme2: '#001F54', theme3: '#2A4858', accent: '#FAF0CA' }, // Winter Wonderland
         3: { theme1: '#5C2E7E', theme2: '#2E1A47', theme3: '#4A2C5E', accent: '#FF6B9D' }  // Festive Lights
       };
