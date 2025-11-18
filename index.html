@@ -26,7 +26,7 @@
       background:linear-gradient(180deg,var(--theme-1) 0%, var(--theme-2) 100%);
       -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
     }
-    .app { width:100%; height:100vh; display:grid; grid-template-columns:260px 1fr 260px; overflow:hidden; gap:10px; padding:10px; }
+    .app { width:100%; height:100vh; display:grid; grid-template-columns:260px 1fr 260px; overflow:hidden; gap:10px; padding:10px; position:relative; }
     .sidebar{ padding:14px; display:flex; flex-direction:column; gap:12px; height:100vh; overflow:auto; background:linear-gradient(180deg,var(--theme-1),var(--theme-2)); border-radius:12px; border-right:1px solid var(--border) }
     .brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:18px}
     .brand .dot{width:28px;height:28px;border-radius:8px;background:var(--christmas-red);box-shadow:0 8px 26px rgba(198,40,40,0.45);display:flex;align-items:center;justify-content:center;font-weight:800;color:white}
@@ -103,11 +103,13 @@
     
     /* Christmas decorations */
     .christmas-decoration {
-      position: absolute;
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       pointer-events: none;
-      z-index: -1;
+      z-index: 1000;
       overflow: hidden;
     }
     .snowflake {
@@ -116,9 +118,10 @@
       font-size: 1em;
       animation: fall linear infinite;
       pointer-events: none;
+      top: -50px;
     }
     @keyframes fall {
-      to { transform: translateY(100vh) rotate(360deg); }
+      to { transform: translateY(calc(100vh + 50px)) rotate(360deg); }
     }
     
     /* Code message styles */
@@ -126,6 +129,7 @@
       background: rgba(0,0,0,0.3);
       border-radius: 8px;
       padding: 12px;
+      padding-top: 36px;
       margin: 8px 0;
       position: relative;
       border: 1px solid rgba(255,255,255,0.1);
@@ -173,8 +177,9 @@
   </style>
 </head>
 <body>
+  <div class="christmas-decoration" id="snowflakes"></div>
+  
   <div class="app" id="app">
-    <div class="christmas-decoration" id="snowflakes"></div>
     
     <aside class="sidebar" id="sidebar">
       <div class="brand"><div class="dot" aria-hidden>🎄</div><div class="name">notcord</div></div>
@@ -211,6 +216,43 @@
             <div style="flex:1"></div>
             <button id="resetNameColor" class="toggleBtn">Reset</button>
           </div>
+        </label>
+
+        <label>Theme Color 1
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="color" id="themeColor1" title="Theme color 1" />
+            <div style="flex:1"></div>
+            <button id="resetTheme1" class="toggleBtn">Reset</button>
+          </div>
+        </label>
+
+        <label>Theme Color 2
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="color" id="themeColor2" title="Theme color 2" />
+            <div style="flex:1"></div>
+            <button id="resetTheme2" class="toggleBtn">Reset</button>
+          </div>
+        </label>
+
+        <label>Theme Color 3
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="color" id="themeColor3" title="Theme color 3" />
+            <div style="flex:1"></div>
+            <button id="resetTheme3" class="toggleBtn">Reset</button>
+          </div>
+        </label>
+
+        <label>Accent Color
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="color" id="accentColor" title="Accent color" />
+            <div style="flex:1"></div>
+            <button id="resetAccent" class="toggleBtn">Reset</button>
+          </div>
+        </label>
+
+        <label style="display:flex;flex-direction:row;justify-content:space-between;align-items:center">
+          <span>Particles</span>
+          <button id="particlesToggle" class="toggleBtn">ON</button>
         </label>
 
         <div style="font-size:12px;color:var(--muted);padding-top:6px">
@@ -320,6 +362,15 @@
 
       const nameColorInput = document.getElementById('nameColor');
       const resetNameColorBtn = document.getElementById('resetNameColor');
+      const themeColor1Input = document.getElementById('themeColor1');
+      const resetTheme1Btn = document.getElementById('resetTheme1');
+      const themeColor2Input = document.getElementById('themeColor2');
+      const resetTheme2Btn = document.getElementById('resetTheme2');
+      const themeColor3Input = document.getElementById('themeColor3');
+      const resetTheme3Btn = document.getElementById('resetTheme3');
+      const accentColorInput = document.getElementById('accentColor');
+      const resetAccentBtn = document.getElementById('resetAccent');
+      const particlesToggleBtn = document.getElementById('particlesToggle');
 
       const playersListEl = document.getElementById('playersList');
       const playersStatusEl = document.getElementById('playersStatus');
@@ -346,6 +397,7 @@
       let themeColor2 = localStorage.getItem('notcord_theme2') || '#071a16';
       let themeColor3 = localStorage.getItem('notcord_theme3') || '#1e3d38';
       let accentColor = localStorage.getItem('notcord_accent') || '#c62828';
+      let particlesEnabled = localStorage.getItem('notcord_particles') !== 'false';
       let localPlayerId = localStorage.getItem('notcord_playerId') || null;
 
       const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -377,7 +429,14 @@
         document.documentElement.style.setProperty('--theme-3', themeColor3); 
         document.documentElement.style.setProperty('--accent', accentColor); 
       }
-      function initializeAppearanceInputs(){ nameColorInput.value = nameColor; }
+      function initializeAppearanceInputs(){ 
+        nameColorInput.value = nameColor;
+        themeColor1Input.value = themeColor1;
+        themeColor2Input.value = themeColor2;
+        themeColor3Input.value = themeColor3;
+        accentColorInput.value = accentColor;
+        particlesToggleBtn.textContent = particlesEnabled ? 'ON' : 'OFF';
+      }
 
       function readTypingMap(){ try{ return JSON.parse(localStorage.getItem(TYPING_KEY)||'{}'); }catch(e){ return {}; } }
       function writeTypingMap(m){ try{ localStorage.setItem(TYPING_KEY, JSON.stringify(m)); }catch(e){} }
@@ -409,19 +468,29 @@
       // Christmas snowflakes
       function createSnowflakes() {
         const snowflakesContainer = document.getElementById('snowflakes');
+        snowflakesContainer.innerHTML = '';
+        if (!particlesEnabled) return;
+        
         const snowflakes = ['❄', '⛄', '🎄', '🎁', '⭐'];
         
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 20; i++) {
           const snowflake = document.createElement('div');
           snowflake.className = 'snowflake';
           snowflake.textContent = snowflakes[Math.floor(Math.random() * snowflakes.length)];
-          snowflake.style.left = Math.random() * 100 + 'vw';
+          snowflake.style.left = Math.random() * 100 + '%';
           snowflake.style.animationDuration = (Math.random() * 5 + 5) + 's';
           snowflake.style.animationDelay = Math.random() * 5 + 's';
           snowflake.style.opacity = Math.random() * 0.5 + 0.3;
           snowflake.style.fontSize = (Math.random() * 10 + 10) + 'px';
           snowflakesContainer.appendChild(snowflake);
         }
+      }
+
+      function toggleParticles() {
+        particlesEnabled = !particlesEnabled;
+        localStorage.setItem('notcord_particles', particlesEnabled);
+        particlesToggleBtn.textContent = particlesEnabled ? 'ON' : 'OFF';
+        createSnowflakes();
       }
 
       // --- Pins ---
@@ -441,346 +510,373 @@
           pinsListEl.appendChild(div);
         }
       }
-      pinClearBtn.addEventListener('click', ()=> { pinned = []; savePinned(); });
 
-      function showPinnedCenter(text){
-        pinnedCenterEl.style.display = 'flex';
-        pinnedCenterEl.innerHTML = `<div class="pinTitle">🎄 Pinned</div><div style="font-weight:700;color:var(--text);max-width:70%">${escapeHtml(text)}</div><button class="pin-close" title="Dismiss">×</button>`;
-        const closeBtn = pinnedCenterEl.querySelector('.pin-close');
-        closeBtn.addEventListener('click', ()=> { pinnedCenterEl.style.display = 'none'; });
-      }
+      pinClearBtn.addEventListener('click', ()=>{ pinned = []; savePinned(); });
 
       async function fetchPublicPinned(){
         try{
-          const r = await fetch(PINS_PUBLIC_API);
-          if(!r.ok) throw new Error('no pinned');
-          const data = await r.json();
-          publicPinnedList = Array.isArray(data) ? data : (data ? [data] : []);
-          if(publicPinnedList.length){
-            const chosen = publicPinnedList[Math.floor(Math.random()*publicPinnedList.length)];
-            if(chosen && (chosen.message || chosen.text || chosen.content || chosen.title)){
-              showPinnedCenter(chosen.message || chosen.text || chosen.content || chosen.title);
+          const res = await fetch(PINS_PUBLIC_API);
+          if(!res.ok) throw new Error('failed fetching public pins');
+          let data = await res.json();
+          if(!Array.isArray(data)) data = [];
+          publicPinnedList = data.filter(p => p && p.message && p.message.trim());
+        }catch(e){ console.error(e); publicPinnedList = []; }
+      }
+
+      function startPinRotation(interval_ms=7000){
+        if(pinRotationIntervalId) clearInterval(pinRotationIntervalId);
+        let idx = 0;
+        function rotatePins(){
+          if(publicPinnedList.length === 0){ pinnedCenterEl.style.display='none'; return; }
+          const p = publicPinnedList[idx % publicPinnedList.length];
+          if(p && p.message){
+            pinnedCenterEl.innerHTML = `<span class="pinTitle">📌 PIN:</span> <span style="font-weight:600">${escapeHtml(p.message)}</span>`;
+            pinnedCenterEl.style.display = 'flex';
+          } else {
+            pinnedCenterEl.style.display = 'none';
+          }
+          idx = (idx+1) % publicPinnedList.length;
+        }
+        rotatePins();
+        pinRotationIntervalId = setInterval(rotatePins, interval_ms);
+      }
+
+      // --- Players ---
+      async function fetchPlayers(){
+        try{
+          const res = await fetch(PLAYERS_API);
+          if(!res.ok) throw new Error('players fetch fail');
+          let data = await res.json();
+          if(!Array.isArray(data)) data = [];
+          const now = Date.now();
+          const ONLINE_THRESHOLD_MS = 11000;
+          const sorted = data.sort((a,b)=>{
+            const aTime = a.lastSeen ? new Date(a.lastSeen).getTime() : 0;
+            const bTime = b.lastSeen ? new Date(b.lastSeen).getTime() : 0;
+            const aOnline = a.online && (now - aTime < ONLINE_THRESHOLD_MS);
+            const bOnline = b.online && (now - bTime < ONLINE_THRESHOLD_MS);
+            if(aOnline && !bOnline) return -1;
+            if(!aOnline && bOnline) return 1;
+            return bTime - aTime;
+          });
+          const total = sorted.length;
+          const onlineList = sorted.filter(p => {
+            const pTime = p.lastSeen ? new Date(p.lastSeen).getTime() : 0;
+            return p.online && (now - pTime < ONLINE_THRESHOLD_MS);
+          });
+          const onlineCount = onlineList.length;
+          playersStatusEl.textContent = `${onlineCount} online / ${total} total`;
+          playersListEl.innerHTML = '';
+          for(const p of sorted){
+            const pTime = p.lastSeen ? new Date(p.lastSeen).getTime() : 0;
+            const isOnline = p.online && (now - pTime < ONLINE_THRESHOLD_MS);
+            const div = document.createElement('div');
+            div.className = 'player ' + (isOnline?'online':'offline');
+            const dotSpan = document.createElement('span');
+            dotSpan.className = 'statusDot';
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'playerName';
+            nameSpan.textContent = p.name || 'Anonymous';
+            if(p.nameColor){
+              nameSpan.style.color = p.nameColor;
+            }
+            const avatarEl = document.createElement('div');
+            avatarEl.style.width='20px';
+            avatarEl.style.height='20px';
+            avatarEl.style.borderRadius='50%';
+            avatarEl.style.overflow='hidden';
+            avatarEl.style.marginLeft='8px';
+            avatarEl.style.display='flex';
+            avatarEl.style.alignItems='center';
+            avatarEl.style.justifyContent='center';
+            avatarEl.style.background='rgba(255,255,255,0.03)';
+            if(p.avatarUrl){
+              const img = document.createElement('img');
+              img.src = p.avatarUrl;
+              img.style.width='100%';
+              img.style.height='100%';
+              img.style.objectFit='cover';
+              avatarEl.appendChild(img);
+            }
+            div.appendChild(dotSpan);
+            div.appendChild(nameSpan);
+            div.appendChild(avatarEl);
+            playersListEl.appendChild(div);
+          }
+        }catch(e){ console.error(e); }
+      }
+
+      async function safeFetch(url, method='GET', body=null){
+        const opts = { method, headers:{'Content-Type':'application/json'} };
+        if(body) opts.body = JSON.stringify(body);
+        const res = await fetch(url, opts);
+        return res;
+      }
+
+      async function upsertLocalPlayer(){
+        if(!username) return;
+        try{
+          if(!localPlayerId){
+            const payload = { name: username, lastSeen: new Date().toISOString(), online:true, nameColor, avatarUrl: avatarDataUrl };
+            const res = await safeFetch(PLAYERS_API, 'POST', payload);
+            if(res.ok){
+              const data = await res.json();
+              localPlayerId = data.id;
+              localStorage.setItem('notcord_playerId', localPlayerId);
             }
           } else {
-            if(pinned.length) showPinnedCenter(pinned[0].message || '');
-            else { pinnedCenterEl.style.display = 'none'; pinnedCenterEl.innerHTML = ''; }
+            await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { name: username, lastSeen: new Date().toISOString(), online:true, nameColor, avatarUrl: avatarDataUrl });
           }
-        }catch(e){
-          if(pinned.length) showPinnedCenter(pinned[0].message || '');
-          else { pinnedCenterEl.style.display = 'none'; pinnedCenterEl.innerHTML = ''; }
-        }
+        }catch(e){ console.error(e); }
       }
 
-      function startPinRotation(intervalMs = 5000){
-        if(pinRotationIntervalId) clearInterval(pinRotationIntervalId);
-        pinRotationIntervalId = setInterval(()=>{
-          const combination = [];
-          if(publicPinnedList && publicPinnedList.length) combination.push(...publicPinnedList.map(p=>({source:'public', message: p.message || p.text || p.content || p.title || ''})));
-          if(pinned && pinned.length) combination.push(...pinned.map(p=>({source:'local', message: p.message || ''})));
-          if(combination.length === 0){
-            pinnedCenterEl.style.display = 'none'; pinnedCenterEl.innerHTML = '';
-            return;
-          }
-          const chosen = combination[Math.floor(Math.random()*combination.length)];
-          if(chosen && chosen.message) showPinnedCenter(chosen.message);
-        }, intervalMs);
-      }
-
-      async function postPublicPin(payload){
+      async function setLocalPlayerOnlineState(onlineState){
+        if(!localPlayerId) return;
         try{
-          const r = await fetch(PINS_PUBLIC_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          if(r.ok){
-            await fetchPublicPinned();
-            return true;
-          }
-        }catch(e){ console.warn('postPublicPin', e); }
-        return false;
+          await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { lastSeen: new Date().toISOString(), online:onlineState, name: username, nameColor, avatarUrl: avatarDataUrl });
+        }catch(e){ console.error(e); }
       }
 
-      // --- Message rendering ---
-      function renderMessage(msg, localUser){
-        if(msg.privateTo && !(msg.privateTo === localUser || msg.username === localUser)) return null;
-        const container = document.createElement('div');
-        const author = msg.username || msg.name || 'Unknown';
-        const isMe = author === localUser;
-        container.className = 'message' + (isMe ? ' me' : '');
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble';
-        bubble.dataset.msgId = msg.id || msg.createdAt || '';
-
-        const actionsDiv = document.createElement('div'); actionsDiv.className = 'actions';
-        
-        // Code messages have different actions
-        if (msg.isCode) {
-          const copyBtn = document.createElement('button'); copyBtn.title = 'Copy Code'; copyBtn.innerHTML = '📋';
-          copyBtn.onclick = (e)=>{
-            e.stopPropagation();
-            navigator.clipboard.writeText(msg.code || '').then(() => {
-              copyBtn.innerHTML = '✅';
-              setTimeout(() => copyBtn.innerHTML = '📋', 2000);
-            });
-          };
-          actionsDiv.appendChild(copyBtn);
-        } else {
-          const replyBtn = document.createElement('button'); replyBtn.title = 'Reply'; replyBtn.innerHTML = '↩';
-          replyBtn.onclick = (e)=>{ e.stopPropagation(); setReplyTo(msg); };
-          actionsDiv.appendChild(replyBtn);
-          
-          const pinBtn = document.createElement('button'); pinBtn.title = 'Pin'; pinBtn.innerHTML = '📌';
-          pinBtn.onclick = async (e)=>{
-            e.stopPropagation();
-            const id = msg.id || msg.createdAt || ('local-'+Date.now());
-            if(!pinned.some(p=>p.id===id)){
-              pinned.unshift({ id, username: author, message: msg.message || msg.text || '', createdAt: msg.createdAt || new Date().toISOString() });
-              if(pinned.length>20) pinned.pop();
-              savePinned();
-            }
-            const payload = { id, username: author, message: msg.message || msg.text || '', createdAt: msg.createdAt || new Date().toISOString() };
-            postPublicPin(payload).catch(()=>{});
-            showPinnedCenter(payload.message);
-          };
-          actionsDiv.appendChild(pinBtn);
-        }
-        
-        bubble.appendChild(actionsDiv);
-
-        const meta = document.createElement('div'); meta.className = 'meta';
-        if(msg.avatarUrl){
-          const av = document.createElement('img');
-          av.src = msg.avatarUrl;
-          av.style.width='28px'; av.style.height='28px'; av.style.borderRadius='50%';
-          av.style.objectFit='cover'; av.style.flexShrink='0';
-          meta.appendChild(av);
-        }
-
-        const nameEl = document.createElement('span'); nameEl.className = 'name'; nameEl.textContent = author;
-        if(msg.nameColor) nameEl.style.color = msg.nameColor;
-        else if(isMe && nameColor) nameEl.style.color = nameColor;
-
-        const timeEl = document.createElement('span'); timeEl.className = 'time'; timeEl.textContent = formatTime(msg.createdAt || msg.created_at || msg.timestamp || msg.time || '');
-        meta.appendChild(nameEl); meta.appendChild(timeEl);
-
-        bubble.appendChild(meta);
-
-        // reply preview
-        if(msg.replyTo && typeof msg.replyTo === 'object'){
-          const quote = document.createElement('div');
-          quote.style.fontSize='13px'; quote.style.color='var(--muted)'; quote.style.borderLeft='2px solid rgba(255,255,255,0.03)'; quote.style.padding='6px'; quote.style.borderRadius='6px';
-          quote.textContent = `${msg.replyTo.username}: ${msg.replyTo.message || ''}`;
-          bubble.appendChild(quote);
-        }
-
-        if(msg.isCode) {
-          // Render code block
-          const codeBlock = document.createElement('div'); 
-          codeBlock.className = 'code-block';
-          
-          if (msg.language) {
-            const langTag = document.createElement('div');
-            langTag.className = 'language-tag';
-            langTag.textContent = msg.language.toUpperCase();
-            codeBlock.appendChild(langTag);
+      function startHeartbeat(){
+        if(heartbeatInterval) clearInterval(heartbeatInterval);
+        heartbeatInterval = setInterval(async ()=>{
+          if(username && localPlayerId){
+            try{
+              await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { lastSeen: new Date().toISOString(), online:true, name: username, nameColor, avatarUrl: avatarDataUrl });
+            }catch(e){}
           }
-          
-          const codeContent = document.createElement('pre');
-          codeContent.textContent = msg.code || '';
-          codeContent.style.margin = '0';
-          codeContent.style.paddingTop = msg.language ? '20px' : '0';
-          codeBlock.appendChild(codeContent);
-          
-          const copyBtn = document.createElement('button');
-          copyBtn.className = 'copy-btn';
-          copyBtn.textContent = 'Copy';
-          copyBtn.onclick = (e) => {
-            e.stopPropagation();
-            navigator.clipboard.writeText(msg.code || '').then(() => {
-              copyBtn.textContent = 'Copied!';
-              copyBtn.classList.add('copied');
-              setTimeout(() => {
-                copyBtn.textContent = 'Copy';
-                copyBtn.classList.remove('copied');
-              }, 2000);
-            });
-          };
-          codeBlock.appendChild(copyBtn);
-          
-          bubble.appendChild(codeBlock);
-          
-          if(msg.message){
-            const caption = document.createElement('div'); 
-            caption.className = 'text'; 
-            caption.textContent = msg.message;
-            bubble.appendChild(caption);
-          }
-        } else if(msg.imageUrl){
-          const photoDiv = document.createElement('div'); photoDiv.className = 'photoMessage';
-          const img = document.createElement('img'); img.src = msg.imageUrl; img.alt = msg.message || 'photo';
-          img.addEventListener('click', ()=> window.open(img.src, '_blank'));
-          photoDiv.appendChild(img);
-          if(msg.message){
-            const caption = document.createElement('div'); caption.className = 'text'; caption.textContent = msg.message;
-            photoDiv.appendChild(caption);
-          }
-          bubble.appendChild(photoDiv);
-        } else {
-          const text = document.createElement('div'); text.className = 'text';
-          const content = msg.message || msg.text || msg.content || '';
-          const html = escapeHtml(content).replace(/@([a-zA-Z0-9_-]{1,16})/g, (m, p1)=>{
-            return `<span class="mention">@${p1}</span>`;
-          }).replace(/@everyone/g, `<span class="mention">@everyone</span>`);
-          text.innerHTML = html;
-          bubble.appendChild(text);
-        }
-
-        bubble.addEventListener('dblclick', ()=> setReplyTo(msg));
-
-        container.appendChild(bubble);
-        return container;
+        }, HEARTBEAT_MS);
       }
 
-      function isAtBottom(){ return messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 80; }
-      function scrollToBottom(){ requestAnimationFrame(()=> messagesEl.scrollTop = messagesEl.scrollHeight); }
-
-      // Safe fetch wrapper
-      async function safeFetch(url, method='GET', body=null){
-        try{
-          const opts = { method, headers:{} };
-          if(body !== null){ opts.headers['Content-Type']='application/json'; opts.body = JSON.stringify(body); }
-          const r = await fetch(url, opts);
-          if(!r.ok) return null;
-          if(r.status === 204) return null;
-          return await r.json();
-        }catch(e){ console.warn('safeFetch', e); return null; }
+      function stopHeartbeat(){
+        if(heartbeatInterval){ clearInterval(heartbeatInterval); heartbeatInterval = null; }
       }
 
-      async function trimServerIfNeeded(list){
-        try{
-          if(!Array.isArray(list)) return;
-          if(list.length <= MAX_MESSAGES_KEEP) return;
-          list.sort((a,b)=>{
-            const ta = new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || (Number(a.id)||0);
-            const tb = new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || (Number(b.id)||0);
-            return ta - tb;
-          });
-          const toDelete = list.slice(0, TRIM_DELETE_COUNT);
-          const deletePromises = [];
-          for(const m of toDelete){
-            if(m.id){
-              deletePromises.push(fetch(`${CHANNELS.general}/${m.id}`, { method:'DELETE' }).catch(()=>null));
-              deletePromises.push(fetch(`${CHANNELS.photos}/${m.id}`, { method:'DELETE' }).catch(()=>null));
-              deletePromises.push(fetch(`${CHANNELS.code}/${m.id}`, { method:'DELETE' }).catch(()=>null));
-            }
-          }
-          await Promise.all(deletePromises);
-        }catch(e){ console.warn('trimServerIfNeeded', e); }
-      }
-
-      async function sendMentionNotificationOnce(msg){
-        try{
-          if(!username) return;
-          if(!("Notification" in window)) return;
-          const mid = msg.id || (msg.createdAt ? (msg.createdAt + '::' + (msg.username||'')) : (msg.message ? ('hash::'+hashString(msg.message+msg.createdAt)) : String(Date.now())));
-          if(notifiedSet.has(mid)) return;
-          const messageLower = (msg.message || '').toLowerCase();
-          const isEveryone = messageLower.includes('@everyone');
-          const mentionsUser = username && messageLower.includes('@' + username.toLowerCase());
-          if(!isEveryone && !mentionsUser) return;
-          if(Notification.permission === 'granted'){
-            const title = isEveryone ? `Everyone pinged by ${msg.username||'Someone'}` : `@${username} mentioned by ${msg.username||'Someone'}`;
-            const body = (msg.message||'').replace(/\n/g,' ');
-            const n = new Notification(title, { body, icon: (msg.avatarUrl || avatarDataUrl) });
-            n.onclick = ()=> window.focus();
-            notifiedSet.add(mid);
-            localStorage.setItem(notifiedKey, JSON.stringify(Array.from(notifiedSet)));
-          } else if(Notification.permission !== 'denied'){
-            const p = await Notification.requestPermission();
-            if(p === 'granted') sendMentionNotificationOnce(msg);
-          }
-        }catch(e){ console.warn('notify', e); }
-      }
-
-      function hashString(str){
-        let h = 0;
-        for(let i=0;i<str.length;i++){ h = ((h<<5)-h) + str.charCodeAt(i); h |= 0; }
-        return String(h >>> 0);
-      }
-
-      // Fetch messages and render
+      // --- Messages ---
       async function fetchMessages(){
         if(!apiBase) return;
         try{
           const res = await fetch(apiBase);
-          if(!res.ok) throw new Error('Fetch failed: '+res.status);
+          if(!res.ok) throw new Error('fetch failed');
           let data = await res.json();
-          if(!Array.isArray(data)) return;
-
-          data.sort((a,b)=>{
-            const ta = new Date(a.createdAt||a.created_at||a.timestamp||0).getTime() || (Number(a.id)||0);
-            const tb = new Date(b.createdAt||b.created_at||b.timestamp||0).getTime() || (Number(b.id)||0);
-            return ta - tb;
-          });
-
-          if(data.length > MAX_MESSAGES_KEEP){
-            await trimServerIfNeeded([...data]);
-            try{
-              const r2 = await fetch(apiBase);
-              if(r2.ok){
-                data = await r2.json();
-                if(!Array.isArray(data)) data = [];
-                data.sort((a,b)=>{ const ta=new Date(a.createdAt||a.created_at||a.timestamp||0).getTime()||0; const tb=new Date(b.createdAt||b.created_at||b.timestamp||0).getTime()||0; return ta-tb; });
-              }
-            }catch(e){}
-          }
-
-          const wasAtBottom = isAtBottom();
-          messagesEl.innerHTML = '';
-          for(const m of data){
-            const el = renderMessage(m, username);
-            if(el){
-              messagesEl.appendChild(el);
-              const textLower = (m.message||'').toLowerCase();
-              if(username && (textLower.includes('@'+username.toLowerCase()) || textLower.includes('@everyone')) && (m.username !== username)){
-                el.style.boxShadow = '0 6px 30px rgba(198,40,40,0.08)';
-                setTimeout(()=> el.style.boxShadow = '', 1600);
-                sendMentionNotificationOnce(m);
-              }
+          if(!Array.isArray(data)) data = [];
+          const sorted = data.sort((a,b)=> new Date(a.createdAt) - new Date(b.createdAt));
+          if(sorted.length > MAX_MESSAGES_KEEP){
+            const toDelete = sorted.slice(0, TRIM_DELETE_COUNT);
+            for(const m of toDelete){
+              try{ await fetch(`${apiBase}/${m.id}`, {method:'DELETE'}); }catch(e){}
             }
+            await fetchMessages();
+            return;
           }
-          if(wasAtBottom) scrollToBottom();
-          setStatus('Connected — '+data.length+' messages');
-        }catch(e){
-          console.error(e);
-          setStatus('Error fetching messages');
+          renderMessages(sorted);
+        }catch(e){ console.error(e); setStatus('Error loading messages'); }
+      }
+
+      function renderAvatarToEl(avatarUrl, el){
+        el.innerHTML = '';
+        if(avatarUrl){
+          const img = document.createElement('img');
+          img.src = avatarUrl;
+          img.style.width='100%';
+          img.style.height='100%';
+          img.style.objectFit='cover';
+          el.appendChild(img);
         }
       }
 
-      // Upload code
-      async function uploadCode(){
-        const code = codeInput.value.trim();
-        const language = languageInput.value.trim() || 'text';
-        
-        if(!code) return;
+      function renderMessages(msgs){
+        messagesEl.innerHTML = '';
+        for(const m of msgs){
+          if(!m || isUserMuted(m.username)) continue;
+          const div = document.createElement('div');
+          div.className = 'message';
+          div.dataset.id = m.id;
+          if(m.username === username) div.classList.add('me');
+
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble';
+
+          const metaDiv = document.createElement('div');
+          metaDiv.className = 'meta';
+
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'name';
+          nameSpan.textContent = m.username || 'Anon';
+          if(m.nameColor) nameSpan.style.color = m.nameColor;
+
+          const timeSpan = document.createElement('span');
+          timeSpan.className = 'time';
+          timeSpan.textContent = formatTime(m.createdAt);
+
+          metaDiv.appendChild(nameSpan);
+          metaDiv.appendChild(timeSpan);
+
+          if(activeChannel === 'photos' && m.imageUrl){
+            const photoDiv = document.createElement('div');
+            photoDiv.className = 'photoMessage';
+            const img = document.createElement('img');
+            img.src = m.imageUrl;
+            img.alt = 'User photo';
+            img.onclick = ()=> window.open(m.imageUrl, '_blank');
+            photoDiv.appendChild(img);
+            bubble.appendChild(metaDiv);
+            bubble.appendChild(photoDiv);
+          } else if(activeChannel === 'code' && m.code){
+            const codeDiv = document.createElement('div');
+            codeDiv.className = 'code-block';
+            
+            if(m.language){
+              const langTag = document.createElement('div');
+              langTag.className = 'language-tag';
+              langTag.textContent = m.language.toUpperCase();
+              codeDiv.appendChild(langTag);
+            }
+            
+            const codeText = document.createElement('div');
+            codeText.textContent = m.code;
+            codeText.style.marginTop = '0';
+            codeDiv.appendChild(codeText);
+            
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.textContent = 'Copy';
+            copyBtn.onclick = ()=>{
+              navigator.clipboard.writeText(m.code).then(()=>{
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(()=>{ copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 2000);
+              }).catch(()=>{
+                copyBtn.textContent = 'Failed';
+                setTimeout(()=>{ copyBtn.textContent = 'Copy'; }, 2000);
+              });
+            };
+            codeDiv.appendChild(copyBtn);
+            
+            bubble.appendChild(metaDiv);
+            bubble.appendChild(codeDiv);
+          } else {
+            const textDiv = document.createElement('div');
+            textDiv.className = 'text';
+            let msgText = m.message || '';
+            const mentionRegex = /@(\w{1,8})/g;
+            let parts = [];
+            let lastIndex = 0;
+            let match;
+            while((match = mentionRegex.exec(msgText)) !== null){
+              if(match.index > lastIndex){
+                parts.push(document.createTextNode(msgText.slice(lastIndex, match.index)));
+              }
+              const mentionSpan = document.createElement('span');
+              mentionSpan.className = 'mention';
+              mentionSpan.textContent = match[0];
+              parts.push(mentionSpan);
+              if(match[1].toLowerCase() === username.toLowerCase() && m.id && !notifiedSet.has(m.id)){
+                if('Notification' in window && Notification.permission === 'granted'){
+                  try{ new Notification('notcord mention', { body: `${m.username} mentioned you: ${msgText.slice(0,60)}...` }); }catch(e){}
+                }
+                notifiedSet.add(m.id);
+                const arr = Array.from(notifiedSet).slice(-200);
+                localStorage.setItem(notifiedKey, JSON.stringify(arr));
+              }
+              lastIndex = match.index + match[0].length;
+            }
+            if(lastIndex < msgText.length){
+              parts.push(document.createTextNode(msgText.slice(lastIndex)));
+            }
+            for(const p of parts) textDiv.appendChild(p);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'actions';
+            const pinBtn = document.createElement('button');
+            pinBtn.textContent = '📌';
+            pinBtn.title = 'Pin (local)';
+            pinBtn.onclick = ()=>{
+              if(pinned.find(x=>x.id===m.id)){ setStatus('Already pinned'); return; }
+              pinned.push({ id: m.id, username: m.username, message: m.message, createdAt: m.createdAt });
+              savePinned();
+              setStatus('Pinned');
+            };
+            const replyBtn = document.createElement('button');
+            replyBtn.textContent = '↩️';
+            replyBtn.title = 'Reply';
+            replyBtn.onclick = ()=>{
+              if(m.username){
+                messageInput.value = '@' + m.username + ' ';
+                messageInput.focus();
+                setStatus('Replying to ' + m.username);
+              }
+            };
+            actionsDiv.appendChild(pinBtn);
+            actionsDiv.appendChild(replyBtn);
+
+            bubble.appendChild(metaDiv);
+            bubble.appendChild(textDiv);
+            bubble.appendChild(actionsDiv);
+          }
+
+          if(m.avatarUrl){
+            const avatarEl = document.createElement('div');
+            avatarEl.style.width='36px';
+            avatarEl.style.height='36px';
+            avatarEl.style.borderRadius='50%';
+            avatarEl.style.overflow='hidden';
+            avatarEl.style.background='rgba(255,255,255,0.03)';
+            avatarEl.style.flexShrink='0';
+            const img = document.createElement('img');
+            img.src = m.avatarUrl;
+            img.style.width='100%';
+            img.style.height='100%';
+            img.style.objectFit='cover';
+            avatarEl.appendChild(img);
+            div.appendChild(avatarEl);
+          }
+
+          div.appendChild(bubble);
+          messagesEl.appendChild(div);
+        }
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      async function postMessage(text){
+        if(!text || !text.trim()) return;
         if(!username){ setStatus('Set username first'); return; }
-        if(isUserMuted(username)){ setStatus('You are muted and cannot upload'); return; }
-        
-        isSending = true; 
-        uploadCodeBtn.disabled = true;
-        uploadCodeBtn.textContent = 'Uploading...';
-        
+        if(isUserMuted(username)){ setStatus('You are muted.'); return; }
+        if(containsBadWords(text)){
+          muteUser(username, 120);
+          setStatus('Forbidden word detected. You are muted for 2 minutes.');
+          return;
+        }
+        isSending = true;
         try{
-          const payload = { 
-            username, 
-            code: code,
-            language: language,
-            isCode: true,
-            createdAt: new Date().toISOString(), 
-            nameColor, 
-            avatarUrl: avatarDataUrl || null
-          };
-          
+          const payload = { username, message: text, createdAt: new Date().toISOString(), nameColor, avatarUrl: avatarDataUrl || null };
+          const res = await fetch(apiBase, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          if(!res.ok) throw new Error('post failed');
+          await fetchMessages();
+        }catch(e){
+          console.error(e);
+          setStatus('Failed to send');
+        }finally{
+          isSending = false;
+        }
+      }
+
+      async function uploadCode(){
+        const code = codeInput.value;
+        if(!code || !code.trim()){ setStatus('Enter some code first'); return; }
+        if(!username){ setStatus('Set username first'); return; }
+        if(isUserMuted(username)){ setStatus('You are muted'); return; }
+        if(containsBadWords(code)){
+          muteUser(username, 120);
+          setStatus('Forbidden word detected. You are muted for 2 minutes.');
+          return;
+        }
+        isSending = true;
+        try{
+          const language = languageInput.value.trim() || 'text';
+          const payload = { username, code, language, createdAt: new Date().toISOString(), nameColor, avatarUrl: avatarDataUrl || null };
           const res = await fetch(CHANNELS.code, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          if(!res.ok) throw new Error('Upload failed: '+res.status);
-          
+          if(!res.ok) throw new Error('upload failed');
           setStatus('Code uploaded');
           codeInput.value = '';
           languageInput.value = '';
@@ -789,189 +885,26 @@
           console.error(e);
           setStatus('Code upload failed');
         }finally{
-          isSending = false; 
-          uploadCodeBtn.disabled = false;
-          uploadCodeBtn.textContent = 'Upload Code';
+          isSending = false;
         }
       }
 
-      // Reply handling
-      function setReplyTo(message){
-        replyToMessage = { username: message.username || message.name || 'Unknown', message: message.message || message.text || '' , id: message.id || message.createdAt || ('local-'+Date.now()) };
-        messageInput.placeholder = `Replying to ${replyToMessage.username} — press Esc to cancel`;
-        messageInput.focus();
-      }
-      function clearReplyTo(){
-        replyToMessage = null;
-        messageInput.placeholder = 'Message (Shift+Enter for newline)';
-      }
-
-      // Post message (with whisper support)
-      async function postMessage(rawText){
-        if(!rawText || !rawText.trim()) return;
-        if(!username){ setStatus('Set username first'); return; }
-        if(isUserMuted(username)){ const rem = Math.ceil((muteMap.get(username)-Date.now())/1000); setStatus('You are muted. Remaining: '+rem+'s'); return; }
-        if(!apiBase){ setStatus('No channel selected'); return; }
-        if(containsBadWords(rawText)){ muteUser(username, 120); setStatus('Forbidden words detected. You are muted for 2 minutes.'); return; }
-
-        isSending = true; sendBtn.disabled = true;
-        let privateTo = null;
-        let messageText = rawText.trim();
-        if(messageText.toLowerCase().startsWith('/w ')){
-          const m = messageText.match(/^\/w\s+(\S+)\s+([\s\S]+)$/i);
-          if(m){ privateTo = m[1]; messageText = m[2]; if(!messageText){ setStatus('Whisper requires text'); isSending=false; sendBtn.disabled=false; return; } }
-          else { setStatus('Whisper format: /w name text'); isSending=false; sendBtn.disabled=false; return; }
-        }
-
-        const payload = { username, message: messageText, createdAt: new Date().toISOString(), nameColor, privateTo: privateTo || null, isPrivate: !!privateTo };
-        if(replyToMessage) payload.replyTo = replyToMessage;
-        if(avatarDataUrl) payload.avatarUrl = avatarDataUrl;
-
-        // optimistic render
-        const optimistic = renderMessage(payload, username);
-        if(optimistic) messagesEl.appendChild(optimistic);
-        scrollToBottom();
-
-        try{
-          const res = await fetch(apiBase, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          if(!res.ok) throw new Error('Send failed: '+res.status);
-          await fetchMessages();
-        }catch(e){ console.error(e); setStatus('Failed to send'); }
-        finally{ isSending = false; sendBtn.disabled = false; clearReplyTo(); }
-      }
-
-      // Players
-      function normalizePlayerName(p){ return p.name || p.username || p.nick || p.displayName || (p.id?String(p.id):String(p)); }
-      function detectPlayerOnline(p){ try{ if(p.lastSeen){ const last = Date.parse(p.lastSeen); if(!isNaN(last) && (Date.now() - last) <= 15000) return true; } }catch(e){} return false; }
-
-      async function fetchPlayers(){
-        try{
-          const res = await fetch(PLAYERS_API);
-          if(!res.ok) throw new Error('Players fetch failed: '+res.status);
-          const data = await res.json();
-          if(!Array.isArray(data)){ playersStatusEl.textContent='No players'; playersListEl.innerHTML=''; return; }
-          const online = [], offline = [];
-          for(const p of data){
-            const name = normalizePlayerName(p);
-            const on = detectPlayerOnline(p);
-            if(on) online.push({name, raw:p});
-            else offline.push({name, raw:p});
-          }
-          if(username){
-            const existsOnline = online.some(x=>x.name===username);
-            const existsOffline = offline.some(x=>x.name===username);
-            if(!existsOnline && !existsOffline) online.unshift({ name:username, raw:{ name:username, lastSeen:new Date().toISOString(), nameColor , idle:false } , local:true });
-          }
-
-          playersListEl.innerHTML = '';
-
-          const headerOnline = document.createElement('div'); headerOnline.style.color='var(--muted)'; headerOnline.style.fontSize='13px'; headerOnline.textContent = 'Online ('+online.length+')';
-          playersListEl.appendChild(headerOnline);
-          for(const p of online){
-            const item = document.createElement('div'); item.className='player online';
-            const left = document.createElement('div'); left.style.display='flex'; left.style.alignItems='center';
-            const dot = document.createElement('span'); dot.className='statusDot';
-            const nameSpan = document.createElement('div'); nameSpan.className='playerName';
-            nameSpan.innerHTML = escapeHtml(p.name) + (p.local ? ' <span style="font-size:12px;color:var(--muted)">(you)</span>' : '');
-            const serverColor = (p.raw && (p.raw.nameColor || p.raw.color)) ? (p.raw.nameColor || p.raw.color) : null;
-            if(serverColor) nameSpan.style.color = serverColor;
-            else if(p.local && nameColor) nameSpan.style.color = nameColor;
-            left.appendChild(dot); left.appendChild(nameSpan);
-            const right = document.createElement('div'); right.style.fontSize='12px'; right.style.color='var(--muted)'; right.textContent='online';
-            item.appendChild(left); item.appendChild(right);
-            playersListEl.appendChild(item);
-          }
-
-          const spacer = document.createElement('div'); spacer.style.height='8px'; playersListEl.appendChild(spacer);
-
-          const headerOff = document.createElement('div'); headerOff.style.color='var(--muted)'; headerOff.style.fontSize='13px'; headerOff.textContent = 'Offline ('+offline.length+')';
-          playersListEl.appendChild(headerOff);
-          for(const p of offline){
-            const item = document.createElement('div'); item.className='player offline';
-            const left = document.createElement('div'); left.style.display='flex'; left.style.alignItems='center';
-            const dot = document.createElement('span'); dot.className='statusDot';
-            const nameSpan = document.createElement('div'); nameSpan.className='playerName'; nameSpan.textContent = p.name;
-            const serverColor = (p.raw && (p.raw.nameColor || p.raw.color)) ? (p.raw.nameColor || p.raw.color) : null;
-            if(serverColor) nameSpan.style.color = serverColor;
-            left.appendChild(dot); left.appendChild(nameSpan);
-            const right = document.createElement('div'); right.style.fontSize='12px'; right.style.color='var(--muted)'; right.textContent='offline';
-            item.appendChild(left); item.appendChild(right);
-            playersListEl.appendChild(item);
-          }
-          playersStatusEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
-        }catch(e){ console.error(e); playersStatusEl.textContent='Error loading players'; playersListEl.innerHTML=''; }
-      }
-
-      async function upsertLocalPlayer(){
-        if(!username) return;
-        try{
-          const res = await fetch(PLAYERS_API);
-          if(!res.ok) throw new Error('Players fetch failed: '+res.status);
-          const data = await res.json();
-          if(!Array.isArray(data)) return;
-          const found = data.find(p => normalizePlayerName(p) === username);
-          const now = new Date().toISOString();
-          if(found){
-            localPlayerId = found.id;
-            localStorage.setItem('notcord_playerId', localPlayerId);
-            await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', {...found, name: username, lastSeen: now, nameColor, avatarUrl: avatarDataUrl});
-          } else {
-            const created = await safeFetch(PLAYERS_API, 'POST', { name: username, lastSeen: now, nameColor, avatarUrl: avatarDataUrl });
-            if(created && created.id){ localPlayerId = created.id; localStorage.setItem('notcord_playerId', localPlayerId); }
-          }
-        }catch(e){ console.warn('upsertLocalPlayer', e); } finally{ fetchPlayers().catch(()=>{}); }
-      }
-
-      async function setLocalPlayerOnlineState(isOnline){
-        if(!localPlayerId) return;
-        try{
-          const cur = await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'GET', null);
-          if(!cur) return;
-          const updated = { ...cur, online: !!isOnline, lastSeen: new Date().toISOString(), name: username || cur.name, nameColor: nameColor || cur.nameColor, avatarUrl: avatarDataUrl || cur.avatarUrl };
-          await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', updated);
-        }catch(e){ console.warn('setLocalPlayerOnlineState', e); } finally{ fetchPlayers().catch(()=>{}); }
-      }
-
-      function startHeartbeat(){
-        stopHeartbeat();
-        if(!username || !localPlayerId) return;
-        heartbeatInterval = setInterval(async ()=>{
-          try{ await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { lastSeen: new Date().toISOString(), online:true, name: username, nameColor, avatarUrl: avatarDataUrl }); }catch(e){ console.warn('heartbeat', e); }
-        }, HEARTBEAT_MS);
-      }
-      function stopHeartbeat(){ if(heartbeatInterval){ clearInterval(heartbeatInterval); heartbeatInterval = null; } }
-
-      // UI helpers
-      function renderAvatarToEl(url, el){
-        el.innerHTML = '';
-        if(!url){
-          el.textContent = username ? username.charAt(0).toUpperCase() : 'U';
-          return;
-        }
-        const img = document.createElement('img');
-        img.src = url; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover';
-        el.appendChild(img);
-      }
-
-      // events wiring
-      channelsEl.addEventListener('click', (e)=>{
-        const ch = e.target.closest('.channel');
-        if(!ch) return;
-        Array.from(channelsEl.children).forEach(c => c.classList.toggle('active', c.dataset.id === ch.dataset.id));
-        setActiveChannel(ch.dataset.id).catch(()=>{});
+      // UI event listeners
+      Array.from(channelsEl.children).forEach(ch => {
+        ch.addEventListener('click', async ()=>{
+          const id = ch.dataset.id;
+          if(!id || id === activeChannel) return;
+          await setActiveChannel(id);
+        });
       });
 
       setNameBtn.addEventListener('click', async ()=>{
-        let val = usernameInput.value.trim();
-        if(!val) val = 'Guest' + Math.floor(Math.random()*9000+1000);
-        if(val.length > 8) val = val.slice(0,8);
+        const u = usernameInput.value.trim();
+        if(!u){ setStatus('Enter username'); return; }
+        if(u.length > 8){ setStatus('Username max 8 chars'); return; }
+        if(containsBadWords(u)){ setStatus('Forbidden name'); return; }
+        username = u;
         const now = Date.now();
-        if(username && now - lastNameChange < WEEK_MS){
-          const wait = Math.ceil((WEEK_MS - (now - lastNameChange))/3600000);
-          setStatus('Name can be changed in ' + wait + 'h');
-          return;
-        }
-        username = val;
         lastNameChange = now;
         localStorage.setItem('notcord_lastNameChange', String(lastNameChange));
         localStorage.setItem('notcord_username', username);
@@ -1046,6 +979,20 @@
 
       nameColorInput.addEventListener('input', async (e)=>{ nameColor = e.target.value; localStorage.setItem('notcord_nameColor', nameColor); if(localPlayerId) await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { name: username, lastSeen: new Date().toISOString(), nameColor, avatarUrl: avatarDataUrl }); fetchPlayers().catch(()=>{}); });
       resetNameColorBtn.addEventListener('click', ()=>{ nameColor='#ffcc00'; nameColorInput.value = nameColor; localStorage.setItem('notcord_nameColor', nameColor); });
+
+      themeColor1Input.addEventListener('input', (e)=>{ themeColor1 = e.target.value; localStorage.setItem('notcord_theme1', themeColor1); applyTheme(); });
+      resetTheme1Btn.addEventListener('click', ()=>{ themeColor1='#0b2b26'; themeColor1Input.value = themeColor1; localStorage.setItem('notcord_theme1', themeColor1); applyTheme(); });
+
+      themeColor2Input.addEventListener('input', (e)=>{ themeColor2 = e.target.value; localStorage.setItem('notcord_theme2', themeColor2); applyTheme(); });
+      resetTheme2Btn.addEventListener('click', ()=>{ themeColor2='#071a16'; themeColor2Input.value = themeColor2; localStorage.setItem('notcord_theme2', themeColor2); applyTheme(); });
+
+      themeColor3Input.addEventListener('input', (e)=>{ themeColor3 = e.target.value; localStorage.setItem('notcord_theme3', themeColor3); applyTheme(); });
+      resetTheme3Btn.addEventListener('click', ()=>{ themeColor3='#1e3d38'; themeColor3Input.value = themeColor3; localStorage.setItem('notcord_theme3', themeColor3); applyTheme(); });
+
+      accentColorInput.addEventListener('input', (e)=>{ accentColor = e.target.value; localStorage.setItem('notcord_accent', accentColor); applyTheme(); });
+      resetAccentBtn.addEventListener('click', ()=>{ accentColor='#c62828'; accentColorInput.value = accentColor; localStorage.setItem('notcord_accent', accentColor); applyTheme(); });
+
+      particlesToggleBtn.addEventListener('click', toggleParticles);
 
       // Switch channel
       async function setActiveChannel(id){
