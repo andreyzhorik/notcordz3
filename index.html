@@ -29,17 +29,17 @@
     .app { width:100%; height:100vh; display:grid; grid-template-columns:260px 1fr 260px; overflow:hidden; gap:10px; padding:10px; position:relative; }
     .sidebar{ padding:14px; display:flex; flex-direction:column; gap:12px; height:100vh; overflow:auto; background:linear-gradient(180deg,var(--theme-1),var(--theme-2)); border-radius:12px; border-right:1px solid var(--border) }
     .brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:18px}
-    .brand .dot{width:28px;height:28px;border-radius:8px;background:var(--christmas-red);box-shadow:0 8px 26px rgba(198,40,40,0.45);display:flex;align-items:center;justify-content:center;font-weight:800;color:white}
+    .brand .dot{width:28px;height:28px;border-radius:8px;background:var(--accent);box-shadow:0 8px 26px rgba(198,40,40,0.45);display:flex;align-items:center;justify-content:center;font-weight:800;color:white}
     .brand .name{color:var(--christmas-gold);font-weight:800;font-size:18px}
     .usernameBox{display:flex;gap:8px;align-items:center}
     .usernameBox input{flex:1;padding:10px 12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:inherit;outline:none}
-    .usernameBox button{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:linear-gradient(90deg,var(--christmas-red),#d32f2f);color:white;cursor:pointer}
+    .usernameBox button{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:linear-gradient(90deg,var(--accent),#d32f2f);color:white;cursor:pointer}
     .usernameLocked{display:flex;gap:8px;align-items:center;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid var(--border);font-weight:600;overflow:hidden}
     .usernameLocked .avatar{width:36px;height:36px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center}
     .channels{margin-top:6px;display:flex;flex-direction:column;gap:6px}
     .channel{padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer;border:1px solid transparent;display:flex;justify-content:space-between;align-items:center}
     .channel:hover{background:rgba(255,255,255,0.01)}
-    .channel.active{background:linear-gradient(90deg, rgba(198,40,40,0.12), rgba(198,40,40,0.02));color:var(--text);border-color:rgba(198,40,40,0.12)}
+    .channel.active{background:linear-gradient(90deg, rgba(198,40,40,0.12), rgba(198,40,40,0.02));color:var(--text);border-color:var(--accent)}
     .settings{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:8px;border-top:1px solid var(--border)}
     .settings label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
     .settings input[type="color"]{width:48px;height:32px;padding:0;border:none;background:transparent;cursor:pointer}
@@ -56,14 +56,14 @@
     .messages{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;min-height:0;background:transparent}
     .pinnedCenter{ position:absolute; left:50%; transform:translateX(-50%); top:10px; z-index:30; background:var(--pin-bg); border:1px solid var(--pin-accent); padding:10px 14px; border-radius:12px; color:var(--text); display:flex; gap:10px; align-items:center; justify-content:center; max-width:70%; text-align:center; box-shadow:0 10px 30px rgba(2,6,23,0.6); transition:opacity .2s ease, transform .15s ease; }
     .pinnedCenter .pin-close{ background: transparent; border: none; color: var(--muted); cursor: pointer; margin-left: 8px; font-weight: 700; }
-    .pinnedCenter .pinTitle{font-weight:800;color:var(--christmas-red); margin-right:8px}
+    .pinnedCenter .pinTitle{font-weight:800;color:var(--accent); margin-right:8px}
     .message{display:flex;gap:12px;align-items:flex-start;max-width:85%}
     .message.me{margin-left:auto;justify-content:flex-end}
     .bubble{
       background:var(--theme-3);
       color:var(--text);
       padding:10px 12px;border-radius:12px;display:flex;flex-direction:column;gap:8px;word-break:break-word;
-      border-left:4px solid var(--christmas-green);
+      border:1px solid var(--accent);
       box-shadow:0 8px 28px rgba(2,6,23,0.6);
       max-width:560px;
       position:relative;
@@ -81,11 +81,11 @@
     .inputArea textarea{flex:1;min-height:44px;max-height:160px;resize:none;padding:10px;border-radius:10px;background:transparent;border:1px solid var(--border);color:inherit;outline:none}
     .controls{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:120px}
     .charCount{font-size:12px;color:var(--muted)}
-    .sendBtn{background:var(--christmas-red);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+    .sendBtn{background:var(--accent);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
     .sendBtn:disabled{opacity:0.6;cursor:default}
     .photoUploadArea { padding:12px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:center; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent) }
     .photoUploadArea input[type=file]{ flex:1 }
-    .photoUploadArea button{ background:var(--christmas-red); color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer }
+    .photoUploadArea button{ background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer }
     .playersPanel{background:linear-gradient(180deg,var(--theme-1),var(--theme-2));border-left:1px solid var(--border);padding:14px;display:flex;flex-direction:column;gap:12px;height:100vh;overflow:auto;border-radius:12px}
     .playersPanel h3{margin:0;font-size:15px;color:var(--muted)}
     .playersList{display:flex;flex-direction:column;gap:6px;overflow:auto}
@@ -99,7 +99,8 @@
     .pin{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;border:1px solid var(--border);display:flex;gap:8px;align-items:flex-start}
     .pin .meta{font-size:13px}
     .pin .closePin{margin-left:auto;background:transparent;border:none;color:var(--muted);cursor:pointer}
-    .mention { background: rgba(198,40,40,0.06); padding:2px 6px; border-radius:6px; font-weight:700; color:var(--christmas-red); }
+    .mention { background: rgba(198,40,40,0.06); padding:2px 6px; border-radius:6px; font-weight:700; color:var(--accent); }
+    .replyQuote { background: rgba(255,255,255,0.03); border-left: 3px solid var(--accent); padding: 6px 10px; margin-bottom: 6px; border-radius: 4px; font-size: 13px; color: var(--muted); font-style: italic; }
     
     /* Christmas decorations */
     .christmas-decoration {
@@ -154,7 +155,7 @@
       transition: background 0.2s;
     }
     .copy-btn:hover {
-      background: var(--christmas-red);
+      background: var(--accent);
     }
     .copy-btn.copied {
       background: var(--christmas-gold);
@@ -164,7 +165,7 @@
       position: absolute;
       top: 8px;
       left: 8px;
-      background: var(--christmas-red);
+      background: var(--accent);
       color: white;
       padding: 2px 6px;
       border-radius: 4px;
@@ -419,6 +420,9 @@
       // reply state
       let replyToMessage = null;
 
+      // message count state
+      let currentMessageCount = 0;
+
       // --- Helpers ---
       function setStatus(txt){ statusEl.textContent = txt; }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -669,8 +673,14 @@
             await fetchMessages();
             return;
           }
+          currentMessageCount = sorted.length;
+          updateStatusWithMessageCount();
           renderMessages(sorted);
         }catch(e){ console.error(e); setStatus('Error loading messages'); }
+      }
+
+      function updateStatusWithMessageCount(){
+        setStatus(`Connected (Christmas Edition) - ${currentMessageCount} messages`);
       }
 
       function renderAvatarToEl(avatarUrl, el){
@@ -756,6 +766,15 @@
             bubble.appendChild(metaDiv);
             bubble.appendChild(codeDiv);
           } else {
+            // Check if this is a reply by looking for replyTo data
+            if(m.replyTo && m.replyTo.username && m.replyTo.message){
+              const replyQuote = document.createElement('div');
+              replyQuote.className = 'replyQuote';
+              const replyText = m.replyTo.message.length > 50 ? m.replyTo.message.substring(0, 50) + '...' : m.replyTo.message;
+              replyQuote.textContent = `↩️ ${m.replyTo.username}: ${replyText}`;
+              bubble.appendChild(replyQuote);
+            }
+
             const textDiv = document.createElement('div');
             textDiv.className = 'text';
             let msgText = m.message || '';
@@ -801,11 +820,9 @@
             replyBtn.textContent = '↩️';
             replyBtn.title = 'Reply';
             replyBtn.onclick = ()=>{
-              if(m.username){
-                messageInput.value = '@' + m.username + ' ';
-                messageInput.focus();
-                setStatus('Replying to ' + m.username);
-              }
+              replyToMessage = { username: m.username, message: m.message, id: m.id };
+              messageInput.focus();
+              setStatus('Replying to ' + m.username);
             };
             actionsDiv.appendChild(pinBtn);
             actionsDiv.appendChild(replyBtn);
@@ -849,9 +866,17 @@
         }
         isSending = true;
         try{
-          const payload = { username, message: text, createdAt: new Date().toISOString(), nameColor, avatarUrl: avatarDataUrl || null };
+          const payload = { 
+            username, 
+            message: text, 
+            createdAt: new Date().toISOString(), 
+            nameColor, 
+            avatarUrl: avatarDataUrl || null,
+            replyTo: replyToMessage ? { username: replyToMessage.username, message: replyToMessage.message } : null
+          };
           const res = await fetch(apiBase, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
           if(!res.ok) throw new Error('post failed');
+          replyToMessage = null;
           await fetchMessages();
         }catch(e){
           console.error(e);
@@ -866,11 +891,6 @@
         if(!code || !code.trim()){ setStatus('Enter some code first'); return; }
         if(!username){ setStatus('Set username first'); return; }
         if(isUserMuted(username)){ setStatus('You are muted'); return; }
-        if(containsBadWords(code)){
-          muteUser(username, 120);
-          setStatus('Forbidden word detected. You are muted for 2 minutes.');
-          return;
-        }
         isSending = true;
         try{
           const language = languageInput.value.trim() || 'text';
@@ -969,7 +989,7 @@
 
       messageInput.addEventListener('keydown', (e)=>{ 
         if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); if(!sendBtn.disabled) sendBtn.click(); }
-        if(e.key === 'Escape'){ if(replyToMessage) clearReplyTo(); messageInput.blur(); }
+        if(e.key === 'Escape'){ if(replyToMessage){ replyToMessage = null; setStatus('Reply cancelled'); } messageInput.blur(); }
       });
 
       photoInput.addEventListener('change', ()=> uploadPhotoBtn.disabled = !photoInput.files.length );
@@ -1122,7 +1142,6 @@
         playersPolling = setInterval(fetchPlayers, 5000);
         setInterval(cleanupTypingMap, 2000);
         setInterval(fetchPublicPinned, 15000);
-        setStatus('Connected (Christmas Edition)');
         renderPinnedLocal();
       }
       init();
