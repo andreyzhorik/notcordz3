@@ -393,13 +393,18 @@
       const HEARTBEAT_MS = 5000;
 
       let username = localStorage.getItem('notcord_username') || '';
-      let nameColor = localStorage.getItem('notcord_nameColor') || '#ffcc00';
-      let themeColor1 = localStorage.getItem('notcord_theme1') || '#0b2b26';
-      let themeColor2 = localStorage.getItem('notcord_theme2') || '#071a16';
-      let themeColor3 = localStorage.getItem('notcord_theme3') || '#1e3d38';
-      let accentColor = localStorage.getItem('notcord_accent') || '#c62828';
-      let particlesEnabled = localStorage.getItem('notcord_particles') !== 'false';
-      let localPlayerId = localStorage.getItem('notcord_playerId') || null;
+let nameColor = localStorage.getItem('notcord_nameColor') || '#ffdf5c'; // christmas gold
+
+// Christmas theme defaults
+let themeColor1 = localStorage.getItem('notcord_theme1') || '#0a1b24'; // midnight winter blue
+let themeColor2 = localStorage.getItem('notcord_theme2') || '#0f2e1c'; // pine green shadow
+let themeColor3 = localStorage.getItem('notcord_theme3') || '#1b4630'; // soft evergreen blend
+
+let accentColor = localStorage.getItem('notcord_accent') || '#ff3b3b'; // candy cane red
+
+let particlesEnabled = localStorage.getItem('notcord_particles') !== 'false';
+let localPlayerId = localStorage.getItem('notcord_playerId') || null;
+
 
       const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
       let lastNameChange = Number(localStorage.getItem('notcord_lastNameChange') || 0);
