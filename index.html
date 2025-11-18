@@ -1,4 +1,4 @@
-  <!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -6,20 +6,20 @@
   <title>notcord — Christmas Edition</title>
   <style>
     :root{
-      --theme-1: #082218; /* deep pine night */
---theme-2: #0a2f22; /* richer forest green */
---theme-3: #134b33; /* warm evergreen */
---muted: #b7c6d4; /* frosty muted text */
---accent: #e03434; /* bright Santa red */
---me-bg: #23303d; /* cozy blue-gray */
---border: rgba(255,255,255,0.12); /* stronger frosty border */
---text: #f2f7ff; /* snowy white text */
---yellow: #ffdd55; /* warm Christmas lights */
---pin-bg: rgba(224,52,52,0.10); /* red ornament glow */
---pin-accent: rgba(224,52,52,0.22); /* brighter ornament outline */
---christmas-green: #2fa235; /* stronger Christmas-tree green */
---christmas-red: #e02626; /* pure Xmas red */
---christmas-gold: #ffe88a; /* warm golden lights */
+      --theme-1: #1B4332;
+      --theme-2: #081C15;
+      --theme-3: #3D1C1C;
+      --muted: #C5D3E0;
+      --accent: #D32F2F;
+      --me-bg: #2b3440;
+      --border: rgba(255,215,0,0.08);
+      --text: #F5F5F5;
+      --yellow: #f7b500;
+      --pin-bg: rgba(211,47,47,0.1);
+      --pin-accent: rgba(255,215,0,0.25);
+      --christmas-green: #2d7d32;
+      --christmas-red: #D32F2F;
+      --christmas-gold: #ffd700;
     }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Helvetica,Arial;color:var(--text);
@@ -95,10 +95,8 @@
     .player.online .statusDot{background:var(--christmas-green);box-shadow:0 0 8px rgba(45,125,50,0.12)}
     .player.offline .statusDot{background:#a0a0a0}
     .player .playerName{font-weight:600}
-    .pinnedArea{border-top:1px dashed rgba(255,255,255,0.03);padding-top:10px;margin-top:8px}
-    .pin{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;border:1px solid var(--border);display:flex;gap:8px;align-items:flex-start}
-    .pin .meta{font-size:13px}
-    .pin .closePin{margin-left:auto;background:transparent;border:none;color:var(--muted);cursor:pointer}
+    .presetsArea{border-top:1px dashed rgba(255,255,255,0.03);padding-top:10px;margin-top:8px}
+    .preset-slot{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;border:1px solid var(--border)}
     .mention { background: rgba(198,40,40,0.06); padding:2px 6px; border-radius:6px; font-weight:700; color:var(--accent); }
     .replyQuote { background: rgba(255,255,255,0.03); border-left: 3px solid var(--accent); padding: 6px 10px; margin-bottom: 6px; border-radius: 4px; font-size: 13px; color: var(--muted); font-style: italic; }
     
@@ -306,12 +304,36 @@
       <div style="height:6px"></div>
       <div class="playersList" id="playersList" aria-live="polite"></div>
 
-      <div class="pinnedArea" id="pinnedArea">
+      <div class="presetsArea" id="presetsArea">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:13px;color:var(--muted)">Pinned</div>
-          <button id="pinClearBtn" class="toggleBtn">Clear</button>
+          <div style="font-size:13px;color:var(--muted)">Theme Presets 🎨</div>
         </div>
-        <div id="pinsList" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
+        <div id="presetsList" style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+          <div class="preset-slot" data-slot="1">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">Slot 1</div>
+            <div style="display:flex;gap:4px">
+              <button class="toggleBtn preset-load" style="flex:1;font-size:11px">Load</button>
+              <button class="toggleBtn preset-save" style="flex:1;font-size:11px">Save</button>
+              <button class="toggleBtn preset-reset" style="font-size:11px">Reset</button>
+            </div>
+          </div>
+          <div class="preset-slot" data-slot="2">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">Slot 2</div>
+            <div style="display:flex;gap:4px">
+              <button class="toggleBtn preset-load" style="flex:1;font-size:11px">Load</button>
+              <button class="toggleBtn preset-save" style="flex:1;font-size:11px">Save</button>
+              <button class="toggleBtn preset-reset" style="font-size:11px">Reset</button>
+            </div>
+          </div>
+          <div class="preset-slot" data-slot="3">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">Slot 3</div>
+            <div style="display:flex;gap:4px">
+              <button class="toggleBtn preset-load" style="flex:1;font-size:11px">Load</button>
+              <button class="toggleBtn preset-save" style="flex:1;font-size:11px">Save</button>
+              <button class="toggleBtn preset-reset" style="font-size:11px">Reset</button>
+            </div>
+          </div>
+        </div>
       </div>
     </aside>
   </div>
@@ -376,8 +398,6 @@
       const playersListEl = document.getElementById('playersList');
       const playersStatusEl = document.getElementById('playersStatus');
 
-      const pinsListEl = document.getElementById('pinsList');
-      const pinClearBtn = document.getElementById('pinClearBtn');
       const pinnedCenterEl = document.getElementById('pinnedCenter');
 
       // --- State ---
@@ -393,25 +413,19 @@
       const HEARTBEAT_MS = 5000;
 
       let username = localStorage.getItem('notcord_username') || '';
-let nameColor = localStorage.getItem('notcord_nameColor') || '#ffdf5c'; // christmas gold
-
-// Christmas theme defaults
-let themeColor1 = localStorage.getItem('notcord_theme1') || '#0a1b24'; // midnight winter blue
-let themeColor2 = localStorage.getItem('notcord_theme2') || '#0f2e1c'; // pine green shadow
-let themeColor3 = localStorage.getItem('notcord_theme3') || '#1b4630'; // soft evergreen blend
-
-let accentColor = localStorage.getItem('notcord_accent') || '#ff3b3b'; // candy cane red
-
-let particlesEnabled = localStorage.getItem('notcord_particles') !== 'false';
-let localPlayerId = localStorage.getItem('notcord_playerId') || null;
-
+      let nameColor = localStorage.getItem('notcord_nameColor') || '#FFD700';
+      let themeColor1 = localStorage.getItem('notcord_theme1') || '#1B4332';
+      let themeColor2 = localStorage.getItem('notcord_theme2') || '#081C15';
+      let themeColor3 = localStorage.getItem('notcord_theme3') || '#3D1C1C';
+      let accentColor = localStorage.getItem('notcord_accent') || '#D32F2F';
+      let particlesEnabled = localStorage.getItem('notcord_particles') !== 'false';
+      let localPlayerId = localStorage.getItem('notcord_playerId') || null;
 
       const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
       let lastNameChange = Number(localStorage.getItem('notcord_lastNameChange') || 0);
       let lastAvatarChange = Number(localStorage.getItem('notcord_lastAvatarChange') || 0);
       let avatarDataUrl = localStorage.getItem('notcord_avatar') || null;
 
-      let pinned = JSON.parse(localStorage.getItem('notcord_pinned') || '[]');
       const muteMap = new Map();
 
       // Track notifications already sent
@@ -502,25 +516,63 @@ let localPlayerId = localStorage.getItem('notcord_playerId') || null;
         createSnowflakes();
       }
 
-      // --- Pins ---
-      function savePinned(){ localStorage.setItem('notcord_pinned', JSON.stringify(pinned)); renderPinnedLocal(); }
-      function renderPinnedLocal(){
-        pinsListEl.innerHTML = '';
-        for(const p of pinned){
-          const div = document.createElement('div'); div.className = 'pin';
-          const meta = document.createElement('div'); meta.className = 'meta';
-          const name = document.createElement('div'); name.style.fontWeight='700'; name.textContent = p.username;
-          const time = document.createElement('div'); time.style.fontSize='12px'; time.style.color='var(--muted)'; time.textContent = formatTime(p.createdAt);
-          const text = document.createElement('div'); text.style.marginTop='6px'; text.textContent = p.message || '';
-          meta.appendChild(name); meta.appendChild(time); meta.appendChild(text);
-          const btn = document.createElement('button'); btn.className='closePin'; btn.textContent='Unpin';
-          btn.onclick = ()=>{ pinned = pinned.filter(x=>x.id !== p.id); savePinned(); };
-          div.appendChild(meta); div.appendChild(btn);
-          pinsListEl.appendChild(div);
-        }
+      // --- Theme Presets ---
+      const DEFAULT_PRESETS = {
+        1: { theme1: '#1B4332', theme2: '#081C15', theme3: '#3D1C1C', accent: '#D32F2F' }, // Traditional Christmas
+        2: { theme1: '#0D3B66', theme2: '#001F54', theme3: '#2A4858', accent: '#FAF0CA' }, // Winter Wonderland
+        3: { theme1: '#5C2E7E', theme2: '#2E1A47', theme3: '#4A2C5E', accent: '#FF6B9D' }  // Festive Lights
+      };
+
+      function getPresets(){
+        try{
+          const saved = localStorage.getItem('notcord_presets');
+          return saved ? JSON.parse(saved) : {...DEFAULT_PRESETS};
+        }catch(e){ return {...DEFAULT_PRESETS}; }
       }
 
-      pinClearBtn.addEventListener('click', ()=>{ pinned = []; savePinned(); });
+      function savePresets(presets){
+        try{ localStorage.setItem('notcord_presets', JSON.stringify(presets)); }catch(e){}
+      }
+
+      function loadPreset(slot){
+        const presets = getPresets();
+        const preset = presets[slot];
+        if(!preset) return;
+        themeColor1 = preset.theme1;
+        themeColor2 = preset.theme2;
+        themeColor3 = preset.theme3;
+        accentColor = preset.accent;
+        localStorage.setItem('notcord_theme1', themeColor1);
+        localStorage.setItem('notcord_theme2', themeColor2);
+        localStorage.setItem('notcord_theme3', themeColor3);
+        localStorage.setItem('notcord_accent', accentColor);
+        initializeAppearanceInputs();
+        applyTheme();
+        setStatus('Preset '+slot+' loaded');
+      }
+
+      function saveCurrentToPreset(slot){
+        const presets = getPresets();
+        presets[slot] = { theme1: themeColor1, theme2: themeColor2, theme3: themeColor3, accent: accentColor };
+        savePresets(presets);
+        setStatus('Saved to preset '+slot);
+      }
+
+      function resetPreset(slot){
+        const presets = getPresets();
+        presets[slot] = {...DEFAULT_PRESETS[slot]};
+        savePresets(presets);
+        setStatus('Preset '+slot+' reset to default');
+      }
+
+      function initPresets(){
+        document.querySelectorAll('.preset-slot').forEach(slotEl => {
+          const slot = parseInt(slotEl.dataset.slot);
+          slotEl.querySelector('.preset-load').addEventListener('click', ()=> loadPreset(slot));
+          slotEl.querySelector('.preset-save').addEventListener('click', ()=> saveCurrentToPreset(slot));
+          slotEl.querySelector('.preset-reset').addEventListener('click', ()=> resetPreset(slot));
+        });
+      }
 
       async function fetchPublicPinned(){
         try{
@@ -812,15 +864,6 @@ let localPlayerId = localStorage.getItem('notcord_playerId') || null;
 
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'actions';
-            const pinBtn = document.createElement('button');
-            pinBtn.textContent = '📌';
-            pinBtn.title = 'Pin (local)';
-            pinBtn.onclick = ()=>{
-              if(pinned.find(x=>x.id===m.id)){ setStatus('Already pinned'); return; }
-              pinned.push({ id: m.id, username: m.username, message: m.message, createdAt: m.createdAt });
-              savePinned();
-              setStatus('Pinned');
-            };
             const replyBtn = document.createElement('button');
             replyBtn.textContent = '↩️';
             replyBtn.title = 'Reply';
@@ -829,7 +872,6 @@ let localPlayerId = localStorage.getItem('notcord_playerId') || null;
               messageInput.focus();
               setStatus('Replying to ' + m.username);
             };
-            actionsDiv.appendChild(pinBtn);
             actionsDiv.appendChild(replyBtn);
 
             bubble.appendChild(metaDiv);
@@ -1003,19 +1045,19 @@ let localPlayerId = localStorage.getItem('notcord_playerId') || null;
       uploadCodeBtn.addEventListener('click', uploadCode);
 
       nameColorInput.addEventListener('input', async (e)=>{ nameColor = e.target.value; localStorage.setItem('notcord_nameColor', nameColor); if(localPlayerId) await safeFetch(`${PLAYERS_API}/${localPlayerId}`, 'PUT', { name: username, lastSeen: new Date().toISOString(), nameColor, avatarUrl: avatarDataUrl }); fetchPlayers().catch(()=>{}); });
-      resetNameColorBtn.addEventListener('click', ()=>{ nameColor='#ffcc00'; nameColorInput.value = nameColor; localStorage.setItem('notcord_nameColor', nameColor); });
+      resetNameColorBtn.addEventListener('click', ()=>{ nameColor='#FFD700'; nameColorInput.value = nameColor; localStorage.setItem('notcord_nameColor', nameColor); });
 
       themeColor1Input.addEventListener('input', (e)=>{ themeColor1 = e.target.value; localStorage.setItem('notcord_theme1', themeColor1); applyTheme(); });
-      resetTheme1Btn.addEventListener('click', ()=>{ themeColor1='#0b2b26'; themeColor1Input.value = themeColor1; localStorage.setItem('notcord_theme1', themeColor1); applyTheme(); });
+      resetTheme1Btn.addEventListener('click', ()=>{ themeColor1='#1B4332'; themeColor1Input.value = themeColor1; localStorage.setItem('notcord_theme1', themeColor1); applyTheme(); });
 
       themeColor2Input.addEventListener('input', (e)=>{ themeColor2 = e.target.value; localStorage.setItem('notcord_theme2', themeColor2); applyTheme(); });
-      resetTheme2Btn.addEventListener('click', ()=>{ themeColor2='#071a16'; themeColor2Input.value = themeColor2; localStorage.setItem('notcord_theme2', themeColor2); applyTheme(); });
+      resetTheme2Btn.addEventListener('click', ()=>{ themeColor2='#081C15'; themeColor2Input.value = themeColor2; localStorage.setItem('notcord_theme2', themeColor2); applyTheme(); });
 
       themeColor3Input.addEventListener('input', (e)=>{ themeColor3 = e.target.value; localStorage.setItem('notcord_theme3', themeColor3); applyTheme(); });
-      resetTheme3Btn.addEventListener('click', ()=>{ themeColor3='#1e3d38'; themeColor3Input.value = themeColor3; localStorage.setItem('notcord_theme3', themeColor3); applyTheme(); });
+      resetTheme3Btn.addEventListener('click', ()=>{ themeColor3='#3D1C1C'; themeColor3Input.value = themeColor3; localStorage.setItem('notcord_theme3', themeColor3); applyTheme(); });
 
       accentColorInput.addEventListener('input', (e)=>{ accentColor = e.target.value; localStorage.setItem('notcord_accent', accentColor); applyTheme(); });
-      resetAccentBtn.addEventListener('click', ()=>{ accentColor='#c62828'; accentColorInput.value = accentColor; localStorage.setItem('notcord_accent', accentColor); applyTheme(); });
+      resetAccentBtn.addEventListener('click', ()=>{ accentColor='#D32F2F'; accentColorInput.value = accentColor; localStorage.setItem('notcord_accent', accentColor); applyTheme(); });
 
       particlesToggleBtn.addEventListener('click', toggleParticles);
 
@@ -1147,7 +1189,7 @@ let localPlayerId = localStorage.getItem('notcord_playerId') || null;
         playersPolling = setInterval(fetchPlayers, 5000);
         setInterval(cleanupTypingMap, 2000);
         setInterval(fetchPublicPinned, 15000);
-        renderPinnedLocal();
+        initPresets();
       }
       init();
 
@@ -1188,7 +1230,7 @@ let localPlayerId = localStorage.getItem('notcord_playerId') || null;
       });
 
       // Expose debug
-      window._notcord = { fetchMessages, fetchPlayers, pinned, fetchPublicPinned, publicPinnedList, startPinRotation };
+      window._notcord = { fetchMessages, fetchPlayers, fetchPublicPinned, publicPinnedList, startPinRotation, getPresets, loadPreset, saveCurrentToPreset, resetPreset };
 
     })();
   </script>
