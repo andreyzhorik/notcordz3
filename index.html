@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notcord Terminal Pro</title>
+    <title>Notcord Ultimate</title>
     
-    <!-- External Libraries -->
+    <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -14,279 +14,160 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
 
-    <style id="theme-root">
+    <style>
         :root {
-            /* Default fallback values */
-            --primary-bg: #0f0f12;
-            --sidebar-bg: #070709;
+            --primary-bg: #0f1014;
+            --sidebar-bg: #0b0c10;
             --accent-color: #00e1ff;
             --text-main: #e0e0e0;
-            --bubble-bg: #1a1a20;
-            --channel-active-bg: #2a2a35;
-            --error-color: #ff4444;
-            --online-color: #3ba55c;
+            --bubble-bg: #1a1b22;
+            --channel-active: #2a2b35;
+            --online-status: #3ba55c;
+            --danger: #ff4757;
         }
 
-        /* Base Reset */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        body { 
-            background: var(--primary-bg); 
-            color: var(--text-main); 
-            height: 100vh; 
-            display: flex; 
-            overflow: hidden; 
-            transition: background 0.3s ease;
-        }
-
-        /* --- Scrollbar --- */
+        /* Essential Reset & Layout */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--primary-bg); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
+        
+        /* Scrollbar Styling */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
 
-        /* --- Sidebar --- */
-        .sidebar { 
-            width: 280px; 
-            background: var(--sidebar-bg); 
-            display: flex; 
-            flex-direction: column; 
-            border-right: 1px solid rgba(255,255,255,0.05); 
-            transition: background 0.3s ease;
-        }
-        .sidebar-header { padding: 25px 20px 10px; }
-        .sidebar-title { color: #666; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+        /* --- Sidebar & User List --- */
+        .sidebar { width: 300px; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid #222; }
+        .sidebar-header { padding: 30px 20px 10px; font-size: 0.65em; text-transform: uppercase; letter-spacing: 1.5px; color: #555; font-weight: 800; }
+        .channel-item { padding: 10px 20px; cursor: pointer; margin: 4px 12px; border-radius: 6px; color: #888; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .channel-item:hover { background: rgba(255,255,255,0.03); color: #fff; }
+        .channel-item.active { background: var(--channel-active); color: #fff; border-left: 3px solid var(--accent-color); }
+        .user-list { flex-grow: 1; margin-top: 20px; border-top: 1px solid #222; padding: 20px; overflow-y: auto; }
+        .user-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 0.85em; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* --- Chat Interface --- */
+        .chat-container { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
+        .chat-header { padding: 18px 25px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.1); }
+        #messages { flex-grow: 1; overflow-y: auto; padding: 25px 35px; display: flex; flex-direction: column; gap: 18px; }
+
+        /* Message Bubbles */
+        .msg-bubble { background: var(--bubble-bg); padding: 16px; border-radius: 12px; max-width: 85%; width: fit-content; border: 1px solid transparent; transition: 0.2s; cursor: pointer; animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .msg-bubble:hover { border-color: #333; }
+        .msg-mention { border-left: 4px solid #f1c40f !important; background: rgba(241, 196, 15, 0.03) !important; }
         
-        .channel-list { margin-top: 5px; }
-        .nav-item { 
-            padding: 10px 18px; 
-            cursor: pointer; 
-            margin: 4px 10px; 
-            border-radius: 6px; 
-            color: #888; 
-            transition: 0.2s; 
-            display: flex; 
-            align-items: center; 
-            gap: 12px;
-            font-weight: 500;
-        }
-        .nav-item:hover { background: rgba(255,255,255,0.03); color: #fff; }
-        .nav-item.active { 
-            background: var(--channel-active-bg); 
-            color: #fff; 
-            border-left: 3px solid var(--accent-color); 
-        }
-
-        .user-list-container { flex-grow: 1; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); overflow-y: auto; padding: 20px; }
-
-        /* --- Chat Main --- */
-        .chat-area { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
-        
-        .header { 
-            padding: 18px 25px; 
-            border-bottom: 1px solid rgba(255,255,255,0.05); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: rgba(0,0,0,0.1);
-        }
-        #channel-display { font-size: 1.1em; font-weight: bold; }
-        #sync-pill { font-size: 0.7em; background: #222; padding: 2px 10px; border-radius: 12px; margin-left: 10px; }
-
-        #messages { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            padding: 20px 30px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 16px; 
-        }
-
-        /* --- Message Bubbles --- */
-        .msg-bubble { 
-            background: var(--bubble-bg); 
-            padding: 15px; 
-            border-radius: 12px; 
-            max-width: 85%; 
-            width: fit-content; 
-            position: relative; 
-            border: 1px solid transparent; 
-            transition: transform 0.1s, border 0.2s; 
-            cursor: pointer;
-        }
-        .msg-bubble:hover { border-color: rgba(255,255,255,0.1); transform: translateX(2px); }
-        .msg-mention { border-left: 4px solid #ffd700 !important; background: rgba(255,215,0,0.03) !important; }
-
-        .msg-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-        .user-ava { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #111; }
+        .reply-notif { font-size: 0.75em; opacity: 0.5; margin-bottom: 8px; border-left: 2px solid #555; padding-left: 10px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .msg-info { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .msg-ava { width: 32px; height: 32px; border-radius: 50%; background: #222; object-fit: cover; }
         .msg-user { font-weight: bold; font-size: 0.95em; }
-        .msg-time { font-size: 0.75em; opacity: 0.4; }
+        .msg-time { font-size: 0.7em; opacity: 0.4; }
 
-        .reply-box { 
-            font-size: 0.8em; 
-            opacity: 0.6; 
-            margin-bottom: 8px; 
-            padding-left: 10px; 
-            border-left: 2px solid #444; 
-            font-style: italic; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-            white-space: nowrap; 
-        }
+        /* Media Handling */
+        .photo-card { width: 100%; max-width: 550px; border-radius: 10px; margin-top: 12px; border: 1px solid #333; }
+        .code-container { position: relative; max-height: 220px; overflow: hidden; margin-top: 10px; border-radius: 8px; transition: max-height 0.3s; }
+        .code-container.expanded { max-height: 5000px; }
+        .expand-code { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, #000); color: var(--accent-color); padding: 25px 0 5px; text-align: center; font-size: 0.7em; font-weight: bold; cursor: pointer; border: none; width: 100%; }
+        .code-container.expanded .expand-code { position: static; background: #222; padding: 5px; }
 
-        /* --- Features: Code, Photos, Markdown --- */
-        .code-block { 
-            position: relative; 
-            max-height: 180px; 
-            overflow: hidden; 
-            margin-top: 10px; 
-            border-radius: 8px; 
-            transition: max-height 0.4s ease; 
-        }
-        .code-block.expanded { max-height: 5000px; }
-        .code-expand { 
-            position: absolute; bottom: 0; left: 0; right: 0; 
-            background: linear-gradient(transparent, #000); 
-            color: var(--accent-color); border: none; padding: 25px 0 5px; 
-            cursor: pointer; text-align: center; font-size: 0.75em; font-weight: bold; 
-        }
-        .code-block.expanded .code-expand { position: static; background: #222; padding: 5px; }
-
-        .photo-card { 
-            width: 100%; 
-            max-width: 500px; 
-            border-radius: 8px; 
-            margin-top: 10px; 
-            border: 1px solid rgba(255,255,255,0.1); 
-            display: block;
-        }
-        .markdown-body { line-height: 1.6; color: var(--text-main); }
-        .markdown-body p { margin-bottom: 8px; }
-
-        /* --- Input Zone --- */
-        .input-wrapper { padding: 20px 30px 30px; background: var(--primary-bg); }
-        .reply-indicator { 
-            display: none; background: #222; padding: 10px 15px; 
-            border-radius: 10px 10px 0 0; font-size: 0.8em; 
-            justify-content: space-between; border: 1px solid rgba(255,255,255,0.1); 
-            border-bottom: none; 
-        }
-        .input-bar { 
-            display: flex; gap: 15px; background: rgba(255,255,255,0.03); 
-            padding: 12px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); 
-            align-items: center; 
-        }
-        input[type="text"] { flex-grow: 1; background: transparent; border: none; color: #fff; outline: none; font-size: 0.95em; }
-        select { background: #111; color: #888; border: 1px solid #333; padding: 4px; border-radius: 4px; font-size: 0.75em; }
+        /* --- Footer & Input --- */
+        .chat-footer { padding: 20px 35px 35px; background: var(--primary-bg); }
+        .reply-ref { display: none; background: #222; padding: 10px 15px; border-radius: 10px 10px 0 0; border: 1px solid #333; border-bottom: none; font-size: 0.8em; justify-content: space-between; }
+        .input-bar { display: flex; gap: 12px; background: rgba(255,255,255,0.03); padding: 14px 20px; border-radius: 12px; border: 1px solid #333; align-items: center; }
+        .input-bar input { flex-grow: 1; background: transparent; border: none; color: #fff; outline: none; }
+        .upload-btn { cursor: pointer; opacity: 0.6; transition: 0.2s; }
+        .upload-btn:hover { opacity: 1; color: var(--accent-color); }
 
         /* --- Settings Modal --- */
-        #settings-modal { 
-            position: absolute; right: 30px; top: 80px; 
-            background: #16171d; border: 1px solid #333; 
-            padding: 25px; border-radius: 15px; width: 320px; 
-            z-index: 9999; display: none; box-shadow: 0 15px 50px rgba(0,0,0,0.7); 
-        }
-        .setting-item { margin-bottom: 16px; }
-        .setting-label { display: block; font-size: 0.7em; text-transform: uppercase; color: #555; margin-bottom: 6px; font-weight: 800; }
-        .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .color-input-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.6em; }
+        #settings { position: absolute; right: 35px; top: 85px; background: #181920; border: 1px solid #333; border-radius: 15px; width: 340px; padding: 25px; z-index: 999; display: none; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; font-size: 0.65em; text-transform: uppercase; color: #666; font-weight: bold; margin-bottom: 8px; }
+        .form-input { width: 100%; background: #0c0d12; border: 1px solid #333; padding: 12px; color: #fff; border-radius: 8px; outline: none; }
+        .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .swatch { display: flex; flex-direction: column; align-items: center; font-size: 0.6em; gap: 5px; }
         input[type="color"] { width: 100%; height: 35px; border: none; background: transparent; cursor: pointer; }
-        .text-input { width: 100%; padding: 10px; background: #0c0d11; border: 1px solid #222; color: #fff; border-radius: 6px; }
+        .save-btn { width: 100%; padding: 14px; background: var(--accent-color); color: #000; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
 
-        .btn-primary { 
-            width: 100%; padding: 12px; background: var(--accent-color); 
-            border: none; color: #000; font-weight: bold; 
-            border-radius: 8px; cursor: pointer; transition: 0.2s; 
-        }
-        .btn-primary:hover { opacity: 0.8; }
-
-        /* Status Pills */
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; }
-        .online { background: var(--online-color); box-shadow: 0 0 8px var(--online-color); }
-        .offline { background: #444; }
-
+        /* Notification Toast */
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: #000; padding: 10px 25px; border-radius: 30px; font-weight: bold; font-size: 0.85em; z-index: 10000; display: none; }
     </style>
 </head>
 <body>
 
+    <div id="toast"></div>
+
     <aside class="sidebar">
-        <div class="sidebar-header">
-            <h4 class="sidebar-title">Notcord Architecture</h4>
+        <header class="sidebar-header">Server Network</header>
+        <div id="channelList">
+            <div class="channel-item active" data-ch="general"><span>#</span> general</div>
+            <div class="channel-item" data-ch="photos"><span>📸</span> photos</div>
+            <div class="channel-item" data-ch="code"><span>💻</span> code</div>
         </div>
-        <nav class="channel-list" id="channelList">
-            <div class="nav-item active" data-ch="general"><span>#</span> general</div>
-            <div class="nav-item" data-ch="photos"><span>📸</span> photos</div>
-            <div class="nav-item" data-ch="code"><span>💻</span> code</div>
-        </nav>
-        <div class="user-list-container">
-            <h4 class="sidebar-title" style="margin-bottom:15px">Active Personnel</h4>
-            <div id="userList"></div>
+        <div class="user-list">
+            <header class="sidebar-header" id="online-count">Online — 0</header>
+            <div id="users"></div>
         </div>
     </aside>
 
-    <main class="chat-area">
-        <header class="header">
-            <div>
-                <span id="channel-display"># general</span>
-                <span id="sync-pill">● Initializing...</span>
-            </div>
-            <div id="modal-trigger" style="cursor:pointer; font-size: 1.3em;">⚙️</div>
+    <main class="chat-container">
+        <header class="chat-header">
+            <div><strong id="ch-name"># general</strong> <span id="status-pill" style="font-size:0.7em; opacity:0.5; margin-left:10px">● Syncing</span></div>
+            <div id="openSettings" style="cursor:pointer; font-size:1.3em">⚙️</div>
         </header>
 
         <section id="messages"></section>
 
-        <footer class="input-wrapper">
-            <div id="replyArea" class="reply-indicator">
-                <span id="replyText"></span>
-                <span id="cancelReply" style="cursor:pointer; font-weight:bold">✕</span>
+        <footer class="chat-footer">
+            <div id="replyBar" class="reply-ref">
+                <span id="replyContent"></span>
+                <span id="closeReply" style="cursor:pointer">✕</span>
             </div>
             <div class="input-bar">
-                <select id="codeLang" style="display:none">
-                    <option value="javascript">JavaScript</option>
-                    <option value="python">Python</option>
+                <label for="fileUpload" class="upload-btn" id="uploadLabel">📎</label>
+                <input type="file" id="fileUpload" style="display:none" accept="image/*">
+                
+                <select id="langChoice" style="display:none; background:#222; color:#fff; border:none; border-radius:4px; font-size:0.7em">
+                    <option value="javascript">JS</option>
+                    <option value="python">PY</option>
                     <option value="css">CSS</option>
                     <option value="html">HTML</option>
                 </select>
-                <input type="text" id="msgInput" placeholder="Send a message to #general...">
-                <button id="sendBtn" class="send-action" style="background:var(--accent-color); color:#000; border:none; padding:8px 20px; border-radius:8px; font-weight:bold; cursor:pointer">Send</button>
+
+                <input type="text" id="msgBtn" placeholder="Message #general...">
+                <button id="sendAction" style="background:var(--accent-color); border:none; padding:8px 18px; border-radius:8px; font-weight:bold; cursor:pointer">Send</button>
             </div>
         </footer>
 
-        <!-- Settings Modal -->
-        <div id="settings-modal">
-            <h3 style="margin-bottom:20px; font-size:1.1em">Identity Config</h3>
-            
-            <div class="setting-item">
-                <label class="setting-label">Display Name</label>
-                <input type="text" id="set-username" class="text-input" placeholder="Enter username...">
+        <div id="settings">
+            <h3 style="margin-bottom:20px">Identity Config</h3>
+            <div class="form-group">
+                <label>User Handle</label>
+                <input type="text" id="pref-name" class="form-input" placeholder="Set name...">
             </div>
-
-            <div class="setting-item">
-                <label class="setting-label">Avatar Asset URL</label>
-                <input type="text" id="set-avatar" class="text-input" placeholder="https://...">
+            <div class="form-group">
+                <label>Avatar Endpoint</label>
+                <input type="text" id="pref-ava" class="form-input" placeholder="https://...">
             </div>
-
-            <div class="setting-item">
-                <label class="setting-label">Visual Theme Overrides</label>
-                <div class="color-grid">
-                    <div class="color-input-wrap"><input type="color" id="set-nameColor"><label>Name</label></div>
-                    <div class="color-input-wrap"><input type="color" id="set-accent"><label>Accent</label></div>
-                    <div class="color-input-wrap"><input type="color" id="set-bg"><label>Page</label></div>
-                    <div class="color-input-wrap"><input type="color" id="set-sideBg"><label>Sidebar</label></div>
-                    <div class="color-input-wrap"><input type="color" id="set-bubbleBg"><label>Bubbles</label></div>
-                    <div class="color-input-wrap"><input type="color" id="set-textColor"><label>Text</label></div>
+            <div class="form-group">
+                <label>Master Theme</label>
+                <div class="theme-grid">
+                    <div class="swatch"><input type="color" id="thm-name"><label>Name</label></div>
+                    <div class="swatch"><input type="color" id="thm-accent"><label>Accent</label></div>
+                    <div class="swatch"><input type="color" id="thm-bg"><label>Page</label></div>
+                    <div class="swatch"><input type="color" id="thm-side"><label>Side</label></div>
+                    <div class="swatch"><input type="color" id="thm-bubble"><label>Bubble</label></div>
+                    <div class="swatch"><input type="color" id="thm-text"><label>Text</label></div>
                 </div>
             </div>
-
-            <button class="btn-primary" id="saveAction">Sync Changes</button>
+            <button class="save-btn" id="savePrefs">Apply & Sync</button>
         </div>
     </main>
 
     <script>
         /**
-         * NOTCORD PRO ENGINE
-         * Single-file SPA architecture 
+         * NOTCORD ENGINE MASTER
          */
-        
+
         const API = {
             chat: 'https://68e839b2f2707e6128ca35e1.mockapi.io/chat',
             photos: 'https://68eeed86b06cc802829ba196.mockapi.io/photos',
@@ -294,275 +175,328 @@
             players: 'https://68e839b2f2707e6128ca35e1.mockapi.io/players'
         };
 
-        // --- 1. State Management ---
-        let currentChannel = 'general';
-        let replyTarget = null;
-        let lastCount = 0;
+        // --- App State ---
+        let currentCh = 'general';
+        let replyCtx = null;
+        let knownMsgIds = new Set();
+        let messageTimes = []; // Anti-spam tracking
 
-        let user = JSON.parse(localStorage.getItem('notcord_master_v3')) || {
-            id: Math.floor(Math.random() * 10000).toString(),
-            name: 'no name',
+        let user = JSON.parse(localStorage.getItem('notcord_pro_v5')) || {
+            id: null,
+            name: 'noname',
             nameColor: '#00e1ff',
             accent: '#00e1ff',
-            bg: '#0f0f12',
-            sideBg: '#070709',
-            bubbleBg: '#1a1a20',
-            textColor: '#e0e0e0',
+            bg: '#0f1014',
+            side: '#0b0c10',
+            bubble: '#1a1b22',
+            text: '#e0e0e0',
             avatar: ''
         };
 
-        // --- 2. Security Utilities ---
-        const sanitizeColor = (val) => {
-            const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-            return hexRegex.test(val) ? val : '#00e1ff';
+        // --- Security Core ---
+        const badWords = ['spam', 'badword', 'offensive']; // Extend as needed
+        const censor = (str) => {
+            let res = str;
+            badWords.forEach(w => {
+                const reg = new RegExp(w, 'gi');
+                res = res.replace(reg, '*'.repeat(w.length));
+            });
+            return res;
         };
 
-        const safeURL = (url) => {
-            if(!url || url === 'null' || url === '') return 'https://www.gravatar.com/avatar/0?d=mp';
-            return DOMPurify.sanitize(url, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
-        };
+        const validateColor = (c) => /^#[0-9A-F]{6}$/i.test(c) ? c : '#fff';
 
-        const applyTheme = () => {
+        const updateTheme = () => {
             const r = document.documentElement.style;
-            r.setProperty('--accent-color', sanitizeColor(user.accent));
-            r.setProperty('--primary-bg', sanitizeColor(user.bg));
-            r.setProperty('--sidebar-bg', sanitizeColor(user.sideBg));
-            r.setProperty('--bubble-bg', sanitizeColor(user.bubbleBg));
-            r.setProperty('--text-main', sanitizeColor(user.textColor));
+            r.setProperty('--accent-color', validateColor(user.accent));
+            r.setProperty('--primary-bg', validateColor(user.bg));
+            r.setProperty('--sidebar-bg', validateColor(user.side));
+            r.setProperty('--bubble-bg', validateColor(user.bubble));
+            r.setProperty('--text-main', validateColor(user.text));
         };
 
-        // --- 3. Message Rendering Engine ---
-        async function loadFeed() {
+        // --- Core UI Logic ---
+        
+        async function fetchFeed() {
             try {
-                const endpoint = currentChannel === 'general' ? API.chat : API[currentChannel];
+                const endpoint = currentCh === 'general' ? API.chat : API[currentCh];
                 const { data } = await axios.get(endpoint);
                 const container = document.getElementById('messages');
-                const isBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
+                
+                // Optimized List: Keep latest 90 (per user request)
+                const displayData = data.slice(-90);
+                const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 200;
 
-                container.innerHTML = ''; // Efficient clearing
+                container.innerHTML = '';
+                displayData.forEach(msg => {
+                    const rawText = msg.message || msg.content || msg.code || msg.imageUrl || '';
+                    const cleanText = censor(rawText);
+                    const author = DOMPurify.sanitize(msg.username || msg.name || 'User');
+                    
+                    // Ping Notification Logic
+                    if (!knownMsgIds.has(msg.id)) {
+                        knownMsgIds.add(msg.id);
+                        if (cleanText.toLowerCase().includes(`@${user.name.toLowerCase()}`)) {
+                            showNotification(author, cleanText);
+                        }
+                    }
 
-                data.forEach(m => {
                     const bubble = document.createElement('div');
-                    bubble.className = 'msg-bubble';
+                    bubble.className = `msg-bubble ${cleanText.includes(`@${user.name}`) ? 'msg-mention' : ''}`;
                     
-                    // Secure data extraction
-                    const author = DOMPurify.sanitize(m.username || m.name || 'Incognito');
-                    const text = m.message || m.content || m.code || m.imageUrl || '';
-                    const mColor = sanitizeColor(m.nameColor || '#ffffff');
-                    const mAva = safeURL(m.avatarUrl);
-                    
-                    if (text.toLowerCase().includes(`@${user.name.toLowerCase()}`)) {
-                        bubble.classList.add('msg-mention');
-                    }
-
-                    // Build internal structure
-                    let html = '';
-                    if (m.replyTo) {
-                        html += `<div class="reply-box">Reply: "${DOMPurify.sanitize(m.replySnippet || m.replyTo)}"</div>`;
-                    }
-
-                    html += `
-                        <div class="msg-header">
-                            <img src="${mAva}" class="user-ava">
-                            <span class="msg-user" style="color:${mColor}">${author}</span>
-                            <span class="msg-time">${new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    let body = (msg.replyTo) ? `<div class="reply-notif">Reply: "${DOMPurify.sanitize(msg.replySnippet || '...')}"</div>` : '';
+                    body += `
+                        <div class="msg-info">
+                            <img src="${(msg.avatarUrl && msg.avatarUrl !== 'null') ? DOMPurify.sanitize(msg.avatarUrl) : 'https://www.gravatar.com/avatar/0?d=mp'}" class="msg-ava">
+                            <span class="msg-user" style="color:${validateColor(msg.nameColor || '#fff')}">${author}</span>
+                            <span class="msg-time">${new Date(msg.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                         </div>
                     `;
 
-                    // Content Logic per Channel
-                    if (currentChannel === 'photos') {
-                        html += `<img src="${DOMPurify.sanitize(text)}" class="photo-card" onerror="this.src='https://placehold.co/400x200?text=Invalid+Asset'">`;
-                    } else if (currentChannel === 'code') {
-                        html += `
-                            <div class="code-block" id="cb-${m.id}">
-                                <pre class="language-${m.language || 'javascript'}"><code>${DOMPurify.sanitize(text)}</code></pre>
-                                <button class="code-expand" data-id="${m.id}">See More Details</button>
+                    if (currentCh === 'photos') {
+                        body += `<img src="${DOMPurify.sanitize(cleanText)}" class="photo-card" onerror="this.src='https://placehold.co/400x200?text=Invalid+Image'">`;
+                    } else if (currentCh === 'code') {
+                        body += `
+                            <div class="code-container" id="code-${msg.id}">
+                                <pre class="language-${msg.language || 'javascript'}"><code>${DOMPurify.sanitize(cleanText)}</code></pre>
+                                <button class="expand-code" data-target="${msg.id}">Expand Snippet</button>
                             </div>`;
                     } else {
-                        html += `<div class="markdown-body">${DOMPurify.sanitize(marked.parse(text))}</div>`;
+                        body += `<div class="markdown-body">${DOMPurify.sanitize(marked.parse(cleanText))}</div>`;
                     }
 
-                    bubble.innerHTML = html;
-
-                    // SECURE EVENT ATTACHMENT (No inline onclick)
+                    bubble.innerHTML = body;
                     bubble.addEventListener('click', (e) => {
-                        if (e.target.classList.contains('code-expand')) {
-                            document.getElementById(`cb-${e.target.dataset.id}`).classList.toggle('expanded');
+                        if(e.target.classList.contains('expand-code')) {
+                            document.getElementById(`code-${e.target.dataset.target}`).classList.toggle('expanded');
                             e.stopPropagation();
                         } else {
-                            initiateReply(author, m.id, text);
+                            initReply(author, msg.id, cleanText);
                         }
                     });
-
                     container.appendChild(bubble);
                 });
 
-                if (isBottom || data.length > lastCount) {
-                    container.scrollTop = container.scrollHeight;
-                    lastCount = data.length;
-                }
-                
+                if(isAtBottom) container.scrollTop = container.scrollHeight;
                 Prism.highlightAll();
-                document.getElementById('sync-pill').innerText = '● Connected';
-                document.getElementById('sync-pill').style.color = '#3ba55c';
+                document.getElementById('status-pill').innerText = '● Synced';
+                document.getElementById('status-pill').style.color = '#3ba55c';
             } catch (err) {
-                document.getElementById('sync-pill').innerText = '● Sync Interrupted';
-                document.getElementById('sync-pill').style.color = '#ff4444';
+                document.getElementById('status-pill').innerText = '● Connection Lost';
+                document.getElementById('status-pill').style.color = '#ff4757';
             }
         }
 
-        // --- 4. User System (Identity & Heartbeat) ---
-        async function pulse() {
-            const timestamp = new Date().toISOString();
+        async function dispatch() {
+            const input = document.getElementById('msgBtn');
+            const content = input.value.trim();
+            if (!content) return;
+
+            // Anti-Spam Check: 3 msgs in 10s
+            const now = Date.now();
+            messageTimes = messageTimes.filter(t => now - t < 10000);
+            if (messageTimes.length >= 3) {
+                return toast("Slow down! You are sending too many messages.");
+            }
+            messageTimes.push(now);
+
+            document.getElementById('sendAction').innerText = '...';
+            
+            const payload = {
+                username: user.name,
+                nameColor: user.nameColor,
+                avatarUrl: user.avatar || 'null',
+                replyTo: replyCtx ? replyCtx.id : null,
+                replySnippet: replyCtx ? replyCtx.snip : null,
+                createdAt: new Date().toISOString()
+            };
+
+            if (currentCh === 'general') payload.message = content;
+            else if (currentCh === 'photos') payload.imageUrl = content;
+            else if (currentCh === 'code') {
+                payload.code = content;
+                payload.language = document.getElementById('langChoice').value;
+                payload.isCode = true;
+            }
+
+            try {
+                await axios.post((currentCh === 'general' ? API.chat : API[currentCh]), payload);
+                input.value = '';
+                cancelReply();
+                fetchFeed();
+            } catch(e) { toast("Failed to send message."); }
+            document.getElementById('sendAction').innerText = 'Send';
+        }
+
+        // --- Presence & Sync ---
+
+        async function pulseSync() {
             const bundle = {
                 name: user.name,
                 nameColor: user.nameColor,
                 avatarUrl: user.avatar || 'null',
-                lastSeen: timestamp,
+                lastSeen: new Date().toISOString(),
                 online: true
             };
 
             try {
-                // Check if we exist
-                await axios.put(`${API.players}/${user.id}`, bundle);
-            } catch {
-                // If ID is lost/bad, try recovery by Name or POST
-                const { data: players } = await axios.get(API.players);
-                const match = players.find(p => p.name === user.name);
-                if (match) {
-                    user.id = match.id;
-                    await axios.put(`${API.players}/${match.id}`, bundle);
+                if (user.id) {
+                    await axios.put(`${API.players}/${user.id}`, bundle);
                 } else {
                     const res = await axios.post(API.players, bundle);
                     user.id = res.data.id;
+                    localStorage.setItem('notcord_pro_v5', JSON.stringify(user));
                 }
-                localStorage.setItem('notcord_master_v3', JSON.stringify(user));
+            } catch (e) {
+                const { data } = await axios.get(API.players);
+                const existing = data.find(p => p.name === user.name);
+                if (existing) {
+                    user.id = existing.id;
+                    await axios.put(`${API.players}/${user.id}`, bundle);
+                }
             }
 
-            const activeList = await axios.get(API.players);
-            drawUserSide(activeList.data);
+            const activePlayers = await axios.get(API.players);
+            renderUsers(activePlayers.data);
         }
 
-        function drawUserSide(data) {
-            const list = document.getElementById('userList');
+        function renderUsers(ps) {
+            const container = document.getElementById('users');
             const now = new Date();
-            list.innerHTML = data.map(u => {
-                const isOnline = (now - new Date(u.lastSeen)) < 35000;
+            const online = ps.filter(p => (now - new Date(p.lastSeen)) < 35000);
+            document.getElementById('online-count').innerText = `Online — ${online.length}`;
+
+            container.innerHTML = ps.map(p => {
+                const active = (now - new Date(p.lastSeen)) < 35000;
                 return `
-                    <div style="display:flex; align-items:center; margin-bottom:12px; font-size:0.85em">
-                        <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
-                        <span style="color:${sanitizeColor(u.nameColor || '#fff')}">${DOMPurify.sanitize(u.name)}</span>
+                    <div class="user-row">
+                        <div class="status-dot ${active ? 'online' : 'offline'}"></div>
+                        <span style="color:${validateColor(p.nameColor || '#fff')}">${DOMPurify.sanitize(p.name)}</span>
                     </div>
                 `;
             }).join('');
         }
 
-        // --- 5. Action Logic ---
-        async function dispatchMessage() {
-            const input = document.getElementById('msgInput');
-            if(!input.value.trim()) return;
+        // --- Utilities ---
 
-            const payload = {
-                username: user.name,
-                nameColor: user.nameColor,
-                avatarUrl: user.avatar || 'null',
-                replyTo: replyTarget ? replyTarget.id : null,
-                replySnippet: replyTarget ? replyTarget.snip : null,
-                createdAt: new Date().toISOString()
-            };
+        const initReply = (name, id, snip) => {
+            replyCtx = { id, snip: snip.substring(0, 30) + (snip.length > 30 ? '...' : '') };
+            document.getElementById('replyBar').style.display = 'flex';
+            document.getElementById('replyContent').innerText = `Replying to @${name}`;
+            document.getElementById('msgBtn').focus();
+        };
 
-            const content = input.value;
-            if(currentChannel === 'general') payload.message = content;
-            else if(currentChannel === 'photos') payload.imageUrl = content;
-            else if(currentChannel === 'code') {
-                payload.code = content;
-                payload.language = document.getElementById('codeLang').value;
+        const cancelReply = () => {
+            replyCtx = null;
+            document.getElementById('replyBar').style.display = 'none';
+        };
+
+        const toast = (msg) => {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        };
+
+        const showNotification = (author, text) => {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(`New Ping from ${author}`, { body: text.substring(0, 50) });
             }
+        };
 
-            input.value = '';
-            closeReply();
-            await axios.post(currentChannel === 'general' ? API.chat : API[currentChannel], payload);
-            loadFeed();
+        // File to Base64 (Upload Simulation)
+        document.getElementById('fileUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2000000) return toast("File too big! Keep under 2MB");
+
+            const reader = new FileReader();
+            reader.onloadstart = () => document.getElementById('uploadLabel').innerText = '...';
+            reader.onload = async function() {
+                document.getElementById('msgBtn').value = reader.result;
+                document.getElementById('uploadLabel').innerText = '📎';
+                toast("Image loaded! Press enter to upload.");
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // --- Event Listeners ---
+
+        document.getElementById('savePrefs').addEventListener('click', async () => {
+            const newName = document.getElementById('pref-name').value.trim();
+            if (!newName) return toast("Username required");
+
+            // Unique Name Enforcement
+            const { data } = await axios.get(API.players);
+            const taken = data.find(p => p.name.toLowerCase() === newName.toLowerCase() && p.id !== user.id);
+            if (taken) return toast("Name already taken! Choose another.");
+
+            user.name = newName;
+            user.avatar = document.getElementById('pref-ava').value;
+            user.nameColor = document.getElementById('thm-name').value;
+            user.accent = document.getElementById('thm-accent').value;
+            user.bg = document.getElementById('thm-bg').value;
+            user.side = document.getElementById('thm-side').value;
+            user.bubble = document.getElementById('thm-bubble').value;
+            user.text = document.getElementById('thm-text').value;
+
+            localStorage.setItem('notcord_pro_v5', JSON.stringify(user));
+            updateTheme();
+            document.getElementById('settings').style.display = 'none';
+            pulseSync();
+            toast("Profile Synchronized.");
+        });
+
+        document.getElementById('openSettings').addEventListener('click', () => {
+            const s = document.getElementById('settings');
+            const show = s.style.display !== 'block';
+            s.style.display = show ? 'block' : 'none';
+            if (show) {
+                document.getElementById('pref-name').value = user.name;
+                document.getElementById('pref-ava').value = user.avatar === 'null' ? '' : user.avatar;
+                document.getElementById('thm-name').value = user.nameColor;
+                document.getElementById('thm-accent').value = user.accent;
+                document.getElementById('thm-bg').value = user.bg;
+                document.getElementById('thm-side').value = user.side;
+                document.getElementById('thm-bubble').value = user.bubble;
+                document.getElementById('thm-text').value = user.text;
+            }
+        });
+
+        document.querySelectorAll('.channel-item').forEach(item => {
+            item.addEventListener('click', () => {
+                currentCh = item.dataset.ch;
+                document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                document.getElementById('ch-name').innerText = `# ${currentCh}`;
+                document.getElementById('msgBtn').placeholder = `Message #${currentCh}...`;
+                document.getElementById('langChoice').style.display = (currentCh === 'code') ? 'block' : 'none';
+                lastCount = 0;
+                fetchFeed();
+            });
+        });
+
+        document.getElementById('sendAction').addEventListener('click', dispatch);
+        document.getElementById('msgBtn').addEventListener('keypress', (e) => e.key === 'Enter' && dispatch());
+        document.getElementById('closeReply').addEventListener('click', cancelReply);
+
+        // --- Boot Routine ---
+        marked.setOptions({ gfm: true, breaks: true, sanitize: false }); // DOMPurify handles sanitize
+        if (Notification.permission === "default") Notification.requestPermission();
+        
+        if (user.name === 'noname') {
+            setTimeout(() => {
+                document.getElementById('openSettings').click();
+                toast("Please set your unique username!");
+            }, 1000);
         }
 
-        const initiateReply = (name, id, fullText) => {
-            replyTarget = { id, snip: fullText.substring(0, 35) + '...' };
-            document.getElementById('replyArea').style.display = 'flex';
-            document.getElementById('replyText').innerText = `Replying to @${name}`;
-            document.getElementById('msgInput').focus();
-        };
+        updateTheme();
+        setInterval(fetchFeed, 3500);
+        setInterval(pulseSync, 10000);
+        fetchFeed();
+        pulseSync();
 
-        const closeReply = () => {
-            replyTarget = null;
-            document.getElementById('replyArea').style.display = 'none';
-        };
-
-        // --- 6. Initialization & Listeners ---
-        const bindEvents = () => {
-            // Channel Switches
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const ch = item.dataset.ch;
-                    currentChannel = ch;
-                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                    item.classList.add('active');
-                    document.getElementById('channel-display').innerText = `# ${ch}`;
-                    document.getElementById('msgInput').placeholder = (ch === 'photos') ? "Paste an image URL..." : (ch === 'code') ? "Paste code snippet..." : `Message #${ch}...`;
-                    document.getElementById('codeLang').style.display = (ch === 'code') ? "block" : "none";
-                    lastCount = 0;
-                    loadFeed();
-                });
-            });
-
-            // Input Actions
-            document.getElementById('sendBtn').addEventListener('click', dispatchMessage);
-            document.getElementById('msgInput').addEventListener('keypress', (e) => (e.key === 'Enter') && dispatchMessage());
-            document.getElementById('cancelReply').addEventListener('click', closeReply);
-
-            // Modal Controls
-            document.getElementById('modal-trigger').addEventListener('click', () => {
-                const m = document.getElementById('settings-modal');
-                const show = m.style.display !== 'block';
-                m.style.display = show ? 'block' : 'none';
-                if(show) {
-                    document.getElementById('set-username').value = user.name;
-                    document.getElementById('set-avatar').value = (user.avatar === 'null' ? '' : user.avatar);
-                    document.getElementById('set-nameColor').value = user.nameColor;
-                    document.getElementById('set-accent').value = user.accent;
-                    document.getElementById('set-bg').value = user.bg;
-                    document.getElementById('set-sideBg').value = user.sideBg;
-                    document.getElementById('set-bubbleBg').value = user.bubbleBg;
-                    document.getElementById('set-textColor').value = user.textColor;
-                }
-            });
-
-            document.getElementById('saveAction').addEventListener('click', () => {
-                const newName = document.getElementById('set-username').value.trim();
-                if(!newName) return alert("Username required");
-                
-                user.name = newName;
-                user.avatar = document.getElementById('set-avatar').value;
-                user.nameColor = document.getElementById('set-nameColor').value;
-                user.accent = document.getElementById('set-accent').value;
-                user.bg = document.getElementById('set-bg').value;
-                user.sideBg = document.getElementById('set-sideBg').value;
-                user.bubbleBg = document.getElementById('set-bubbleBg').value;
-                user.textColor = document.getElementById('set-textColor').value;
-
-                localStorage.setItem('notcord_master_v3', JSON.stringify(user));
-                applyTheme();
-                document.getElementById('settings-modal').style.display = 'none';
-                pulse();
-            });
-        };
-
-        // --- Start ---
-        bindEvents();
-        applyTheme();
-        setInterval(loadFeed, 3500);
-        setInterval(pulse, 10000);
-        loadFeed();
-        pulse();
     </script>
 </body>
 </html>
