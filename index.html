@@ -190,6 +190,7 @@
         .chat-view { 
             flex-grow: 1; 
             min-width: 0;
+            width: 100%;
             display: flex; 
             flex-direction: column; 
             position: relative; 
@@ -245,8 +246,8 @@
             background: var(--bubble-bg); 
             padding: 16px; 
             border-radius: var(--radius-md); 
-            max-width: 100%; 
-            width: 100%; 
+            max-width: 85%; 
+            width: fit-content; 
             border: 1px solid var(--card-border); 
             animation: fadeInSlide 0.4s ease-out; 
             position: relative; 
@@ -904,6 +905,11 @@
             // High Limit Consistency
             const charLimit = CORE_STATE.channel === 'general' ? 250 : 100000;
             if (raw.length > charLimit) return triggerSystemToast(`Warning: Input exceeds ${charLimit} chars.`);
+
+            const requiredPrefix = `${user.name}:`;
+            if (!raw.toLowerCase().startsWith(requiredPrefix.toLowerCase())) {
+                return triggerSystemToast(`Start your post with "${requiredPrefix}".`);
+            }
 
             const payload = {
                 username: user.name,
