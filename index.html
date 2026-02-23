@@ -245,8 +245,8 @@
             background: var(--bubble-bg); 
             padding: 16px; 
             border-radius: var(--radius-md); 
-            max-width: 85%; 
-            width: fit-content; 
+            max-width: 100%; 
+            width: 100%; 
             border: 1px solid var(--card-border); 
             animation: fadeInSlide 0.4s ease-out; 
             position: relative; 
@@ -699,7 +699,7 @@
             lastPostTime: 0,
             onboarded: false,
             muted: false,
-            notifiedMentions: new Set()
+            notifiedMentions: new Set(JSON.parse(localStorage.getItem('notcord_seen_mentions_v1') || '[]'))
         };
 
         // User Identity Model
@@ -731,6 +731,18 @@
                 processed = processed.replace(searcher, '####');
             });
             return processed;
+        }
+
+        function escapeHtml(input) {
+            return String(input || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function persistSeenMentions() {
+            const seen = Array.from(CORE_STATE.notifiedMentions).slice(-500);
+            localStorage.setItem('notcord_seen_mentions_v1', JSON.stringify(seen));
         }
 
         /**
@@ -836,6 +848,7 @@
                         const body = (msg.message || msg.code || msg.imageUrl || '').toLowerCase();
                         if (body.includes(`@${user.name.toLowerCase()}`) && !CORE_STATE.notifiedMentions.has(msg.id)) {
                             CORE_STATE.notifiedMentions.add(msg.id);
+                            persistSeenMentions();
                             dispatchSystemAlert(`Mention from ${msg.username}`, body);
                         }
                     }
@@ -970,7 +983,8 @@
                         <div style="background:linear-gradient(transparent, #0a0a0a); height:40px; position:absolute; bottom:0; width:100%; cursor:pointer; display:flex; align-items:flex-end; justify-content:center; color:var(--accent-color); font-size: 0.7em; font-weight:800; padding-bottom:5px" onclick="toggleExpansion('${msg.id}')">Toggle View</div>
                     </div>`;
             } else {
-                html += `<div class="md-body">${DOMPurify.sanitize(marked.parse(body))}</div>`;
+                const safeMd = marked.parse(escapeHtml(body));
+                html += `<div class="md-body">${DOMPurify.sanitize(safeMd)}</div>`;
             }
 
             row.innerHTML = html;
@@ -1278,6 +1292,10 @@
             marked.setOptions({ gfm: true, breaks: true });
             
             updateUIVisuals();
+            if (CORE_STATE.notifiedMentions.size > 500) {
+                CORE_STATE.notifiedMentions = new Set(Array.from(CORE_STATE.notifiedMentions).slice(-500));
+                persistSeenMentions();
+            }
             document.getElementById('imgTool').style.display = 'none';
             document.getElementById('uploadState').style.display = 'none';
             runCycle();
