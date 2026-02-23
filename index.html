@@ -721,6 +721,8 @@
         };
 
         const harmfulFilters = ['scam', 'cheat', 'hack', 'moderator', 'admin', 'toxic', 'fuck', 'shit', 'bitch', 'asshole', 'bastard'];
+        const CLEAR_LOCK_NAME = '__system_clear_lock__';
+        const CLEAR_COOLDOWN_MS = 5 * 60 * 1000;
         
         /**
          * UTILITY: String Sanitization & Censor
@@ -782,7 +784,7 @@
 
             try {
                 const { data: roster } = await axios.get(NETWORK_API.users);
-                const exists = roster.some(m => (m.name || '').toLowerCase() === inputName.toLowerCase());
+                const exists = roster.some(m => !isSystemUserRecord(m) && (m.name || '').toLowerCase() === inputName.toLowerCase());
                 if (exists) return errField.innerText = "Error: Username already exists. Choose another.";
             } catch (e) {
                 return errField.innerText = "Network error while validating username. Try again.";
@@ -1029,14 +1031,33 @@
             }
         }
 
+        function isSystemUserRecord(m) {
+            return !!m && (m.system === true || (m.name || '') === CLEAR_LOCK_NAME || (m.key || '') === 'clear-lock');
+        }
+
+        async function getClearLockRecord() {
+            const { data } = await axios.get(NETWORK_API.users);
+            return data.find(m => isSystemUserRecord(m) && ((m.key || '') === 'clear-lock' || (m.name || '') === CLEAR_LOCK_NAME)) || null;
+        }
+
+        async function setClearLockRecord() {
+            const payload = {
+                name: CLEAR_LOCK_NAME,
+                key: 'clear-lock',
+                system: true,
+                clearBy: user.name,
+                lastClearAt: new Date().toISOString()
+            };
+            const lock = await getClearLockRecord();
+            if (lock && lock.id) await axios.put(`${NETWORK_API.users}/${lock.id}`, payload);
+            else await axios.post(NETWORK_API.users, payload);
+        }
+
         async function clearWholeServerChat() {
-            const targets = [NETWORK_API.chat, NETWORK_API.photos, NETWORK_API.code];
-            for (const endpoint of targets) {
-                const { data } = await axios.get(endpoint);
-                for (const row of data) {
-                    if (!row || !row.id) continue;
-                    await axios.delete(`${endpoint}/${row.id}`);
-                }
+            const { data } = await axios.get(NETWORK_API.chat);
+            for (const row of data) {
+                if (!row || !row.id) continue;
+                await axios.delete(`${NETWORK_API.chat}/${row.id}`);
             }
         }
 
@@ -1058,20 +1079,33 @@
             
             switch(cmd) {
                 case '/help':
-                    triggerSystemToast("Commands: /clear (server), /clearcookies, /shrug, /theme [dark|vixel]");
+                    triggerSystemToast("Commands: /clear (general, 5m cooldown), /clearcookies, /shrug, /theme [dark|vixel]");
                     break;
                 case '/clear':
-                    triggerSystemToast("Clearing whole server chat...");
                     try {
+                        const lock = await getClearLockRecord();
+                        const last = lock?.lastClearAt ? new Date(lock.lastClearAt).getTime() : 0;
+                        const wait = Math.max(0, CLEAR_COOLDOWN_MS - (Date.now() - last));
+                        if (wait > 0) {
+                            const min = Math.ceil(wait / 60000);
+                            triggerSystemToast(`Global cooldown active. Wait ~${min} minute(s).`);
+                            break;
+                        }
+
+                        triggerSystemToast("Clearing #general on server...");
                         await clearWholeServerChat();
-                        document.getElementById('messageFrame').innerHTML = '';
-                        CORE_STATE.highwaterMark = null;
-                        CORE_STATE.scrolledBottom = true;
+                        await setClearLockRecord();
+
+                        if (CORE_STATE.channel === 'general') {
+                            document.getElementById('messageFrame').innerHTML = '';
+                            CORE_STATE.highwaterMark = null;
+                            CORE_STATE.scrolledBottom = true;
+                        }
                         CORE_STATE.notifiedMentions.clear();
                         persistSeenMentions();
-                        triggerSystemToast("Server chat cleared across #general, #photos, and #code.");
+                        triggerSystemToast("#general cleared. 5-minute global cooldown started.");
                     } catch (e) {
-                        triggerSystemToast("Failed to clear server chat.");
+                        triggerSystemToast("Failed to clear #general.");
                     }
                     break;
                 case '/clearcookies':
@@ -1127,7 +1161,7 @@
             const online = [];
             const offline = [];
 
-            list.forEach(m => {
+            list.filter(m => !isSystemUserRecord(m)).forEach(m => {
                 const diff = (refTime - new Date(m.lastSeen)) < 45000;
                 if (diff) online.push(m);
                 else offline.push(m);
@@ -1297,7 +1331,7 @@
 
             try {
                 const { data: roster } = await axios.get(NETWORK_API.users);
-                const exists = roster.some(m => (m.name || '').toLowerCase() === newName.toLowerCase() && String(m.id) !== String(user.id));
+                const exists = roster.some(m => !isSystemUserRecord(m) && (m.name || '').toLowerCase() === newName.toLowerCase() && String(m.id) !== String(user.id));
                 if (exists) return triggerSystemToast("That username already exists.");
             } catch (e) {
                 return triggerSystemToast("Unable to validate username right now.");
