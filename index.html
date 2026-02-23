@@ -43,6 +43,7 @@
             --radius-xl: 14px;
             --radius-md: 8px;
             --radius-sm: 4px;
+            --panel-glow: 0 20px 45px rgba(0, 225, 255, 0.1);
         }
 
         /* Logic for Light Theme Overrides */
@@ -201,7 +202,7 @@
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            background: rgba(0,0,0,0.05); 
+            background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0)); 
             backdrop-filter: blur(8px);
             z-index: 50;
         }
@@ -244,13 +245,13 @@
             background: var(--bubble-bg); 
             padding: 16px; 
             border-radius: var(--radius-md); 
-            max-width: 85%; 
-            width: fit-content; 
+            max-width: 100%; 
+            width: 100%; 
             border: 1px solid var(--card-border); 
             animation: fadeInSlide 0.4s ease-out; 
             position: relative; 
             word-wrap: break-word;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 22px rgba(0,0,0,0.18);
         }
 
         @keyframes fadeInSlide { 
@@ -374,8 +375,14 @@
             border-radius: var(--radius-md); 
             border: 1px solid var(--card-border); 
             transition: border-color var(--transition-speed);
+            box-shadow: var(--panel-glow);
         }
         .input-controller:focus-within { border-color: var(--accent-color); background: rgba(255,255,255,0.06); }
+        .upload-lock {
+            font-size: 0.68em;
+            opacity: 0.45;
+            margin-left: 3px;
+        }
 
         .input-row { display: flex; align-items: flex-end; gap: 15px; }
         
@@ -611,7 +618,7 @@
             </div>
             <div class="input-controller">
                 <div class="input-row">
-                    <label for="imgLoader" class="tool-icon" id="imgTool" title="High-Res Upload">🖼️</label>
+                    <label for="imgLoader" class="tool-icon" id="imgTool" title="High-Res Upload (photos channel only)">🖼️</label><span id="uploadState" class="upload-lock">photos only · one-time</span>
                     <input type="file" id="imgLoader" style="display:none" accept="image/*">
                     
                     <select id="codeSyntax" style="display:none; background:#111; color:#fff; border:1px solid #333; border-radius:4px; font-size:0.75em; padding: 6px; margin-bottom: 6px">
@@ -691,7 +698,8 @@
             scrolledBottom: true,
             lastPostTime: 0,
             onboarded: false,
-            muted: false
+            muted: false,
+            notifiedMentions: new Set(JSON.parse(localStorage.getItem('notcord_seen_mentions_v1') || '[]'))
         };
 
         // User Identity Model
@@ -709,7 +717,7 @@
             isMuted: false
         };
 
-        const harmfulFilters = ['scam', 'cheat', 'hack', 'moderator', 'admin', 'toxic'];
+        const harmfulFilters = ['scam', 'cheat', 'hack', 'moderator', 'admin', 'toxic', 'fuck', 'shit', 'bitch', 'asshole', 'bastard'];
         
         /**
          * UTILITY: String Sanitization & Censor
@@ -718,10 +726,23 @@
             if (!input) return '';
             let processed = input;
             harmfulFilters.forEach(f => {
-                const searcher = new RegExp(f.split('').join('[.\\-_*\\s]*'), 'gi');
+                const escaped = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const searcher = new RegExp(`\\b${escaped}\\b`, 'gi');
                 processed = processed.replace(searcher, '####');
             });
             return processed;
+        }
+
+        function escapeHtml(input) {
+            return String(input || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function persistSeenMentions() {
+            const seen = Array.from(CORE_STATE.notifiedMentions).slice(-500);
+            localStorage.setItem('notcord_seen_mentions_v1', JSON.stringify(seen));
         }
 
         /**
@@ -825,7 +846,9 @@
 
                         // Audio/Desktop Notifications for Mentions
                         const body = (msg.message || msg.code || msg.imageUrl || '').toLowerCase();
-                        if (body.includes(`@${user.name.toLowerCase()}`)) {
+                        if (body.includes(`@${user.name.toLowerCase()}`) && !CORE_STATE.notifiedMentions.has(msg.id)) {
+                            CORE_STATE.notifiedMentions.add(msg.id);
+                            persistSeenMentions();
                             dispatchSystemAlert(`Mention from ${msg.username}`, body);
                         }
                     }
@@ -865,7 +888,7 @@
             if (!raw) return;
 
             // Robust local commands
-            if (raw.startsWith('/')) {
+            if (raw.startsWith('/') && CORE_STATE.channel !== 'code') {
                 executeClientCommand(raw);
                 el.value = '';
                 return;
@@ -891,10 +914,10 @@
                 createdAt: new Date().toISOString()
             };
 
-            if (CORE_STATE.channel === 'general') payload.message = raw;
+            if (CORE_STATE.channel === 'general') payload.message = cleanBody(raw);
             else if (CORE_STATE.channel === 'photos') payload.imageUrl = raw;
             else if (CORE_STATE.channel === 'code') {
-                payload.code = raw;
+                payload.code = cleanBody(raw);
                 payload.language = document.getElementById('codeSyntax').value;
             }
 
@@ -960,7 +983,8 @@
                         <div style="background:linear-gradient(transparent, #0a0a0a); height:40px; position:absolute; bottom:0; width:100%; cursor:pointer; display:flex; align-items:flex-end; justify-content:center; color:var(--accent-color); font-size: 0.7em; font-weight:800; padding-bottom:5px" onclick="toggleExpansion('${msg.id}')">Toggle View</div>
                     </div>`;
             } else {
-                html += `<div class="md-body">${DOMPurify.sanitize(marked.parse(body))}</div>`;
+                const safeMd = marked.parse(escapeHtml(body));
+                html += `<div class="md-body">${DOMPurify.sanitize(safeMd)}</div>`;
             }
 
             row.innerHTML = html;
@@ -1159,14 +1183,23 @@
         });
 
         document.getElementById('imgLoader').addEventListener('change', function(e) {
+            if (CORE_STATE.channel !== 'photos') {
+                this.value = '';
+                return triggerSystemToast('Image uploads are only enabled in #photos.');
+            }
+
             const f = e.target.files[0];
             if (f) {
-                if (f.size > 10 * 1024 * 1024) return triggerSystemToast("Denied: Image exceeds 10MB High-Res limit.");
+                if (f.size > 10 * 1024 * 1024) {
+                    this.value = '';
+                    return triggerSystemToast("Denied: Image exceeds 10MB High-Res limit.");
+                }
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     document.getElementById('primaryMsgInput').value = ev.target.result;
-                    triggerSystemToast("Asset encoded successfully.");
+                    triggerSystemToast("Asset attached once. Re-select to upload another image.");
                     updateCharVisuals();
+                    this.value = '';
                 };
                 reader.readAsDataURL(f);
             }
@@ -1186,6 +1219,8 @@
                 
                 document.getElementById('codeSyntax').style.display = (target === 'code') ? 'block' : 'none';
                 document.getElementById('imgTool').style.display = (target === 'photos') ? 'block' : 'none';
+                document.getElementById('uploadState').style.display = (target === 'photos') ? 'inline' : 'none';
+                document.getElementById('imgLoader').value = '';
                 
                 CORE_STATE.highwaterMark = null;
                 document.getElementById('messageFrame').innerHTML = '';
@@ -1257,6 +1292,12 @@
             marked.setOptions({ gfm: true, breaks: true });
             
             updateUIVisuals();
+            if (CORE_STATE.notifiedMentions.size > 500) {
+                CORE_STATE.notifiedMentions = new Set(Array.from(CORE_STATE.notifiedMentions).slice(-500));
+                persistSeenMentions();
+            }
+            document.getElementById('imgTool').style.display = 'none';
+            document.getElementById('uploadState').style.display = 'none';
             runCycle();
             pulseAvailability();
             
