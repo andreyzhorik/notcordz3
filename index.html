@@ -900,7 +900,7 @@
 
             // Robust local commands
             if (raw.startsWith('/') && CORE_STATE.channel !== 'code') {
-                executeClientCommand(raw);
+                await executeClientCommand(raw);
                 el.value = '';
                 return;
             }
@@ -1029,22 +1029,54 @@
             }
         }
 
+        async function clearWholeServerChat() {
+            const targets = [NETWORK_API.chat, NETWORK_API.photos, NETWORK_API.code];
+            for (const endpoint of targets) {
+                const { data } = await axios.get(endpoint);
+                for (const row of data) {
+                    if (!row || !row.id) continue;
+                    await axios.delete(`${endpoint}/${row.id}`);
+                }
+            }
+        }
+
+        function clearBrowserCookies() {
+            document.cookie.split(';').forEach(cookie => {
+                const eqPos = cookie.indexOf('=');
+                const name = (eqPos > -1 ? cookie.substr(0, eqPos) : cookie).trim();
+                if (!name) return;
+                document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+            });
+        }
+
         /**
          * COMMANDS: Client Side Processing
          */
-        function executeClientCommand(input) {
+        async function executeClientCommand(input) {
             const args = input.split(' ');
             const cmd = args[0].toLowerCase();
             
             switch(cmd) {
                 case '/help':
-                    triggerSystemToast("Local: /clear, /shrug, /theme [dark|vixel], /avatar [url]");
+                    triggerSystemToast("Commands: /clear (server), /clearcookies, /shrug, /theme [dark|vixel]");
                     break;
                 case '/clear':
-                    document.getElementById('messageFrame').innerHTML = '';
-                    CORE_STATE.highwaterMark = null;
-                    CORE_STATE.scrolledBottom = true;
-                    triggerSystemToast("Local chat stack cleared. Global history remains.");
+                    triggerSystemToast("Clearing whole server chat...");
+                    try {
+                        await clearWholeServerChat();
+                        document.getElementById('messageFrame').innerHTML = '';
+                        CORE_STATE.highwaterMark = null;
+                        CORE_STATE.scrolledBottom = true;
+                        CORE_STATE.notifiedMentions.clear();
+                        persistSeenMentions();
+                        triggerSystemToast("Server chat cleared across #general, #photos, and #code.");
+                    } catch (e) {
+                        triggerSystemToast("Failed to clear server chat.");
+                    }
+                    break;
+                case '/clearcookies':
+                    clearBrowserCookies();
+                    triggerSystemToast("Browser cookies cleared.");
                     break;
                 case '/shrug':
                     document.getElementById('primaryMsgInput').value += ' ¯\\_(ツ)_/¯';
